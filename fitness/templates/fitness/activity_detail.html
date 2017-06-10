@@ -1,7 +1,35 @@
 {% extends "fitness/base.html" %}
 {% load tz %}
+{% load static %}
+
+{% block header %}
+<script
+  src="https://code.jquery.com/jquery-3.2.1.min.js"
+  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+  crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css"
+   integrity="sha512-07I2e+7D8p6he1SIM+1twR5TIrhUQn9+I6yjqD53JQjFiMf8EtC93ty0/5vJTZGF8aAocvHYNEDJajGdNx1IsQ=="
+   crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js"
+   integrity="sha512-A7vV8IFfih/D732iSSKi20u/ooOfj/AGehOKq0f4vLT1Zr2Y+RX7C+w8A1gaSasGtRUZpF/NZgzSAu4/Gc41Lg=="
+   crossorigin=""></script>
+<script src="{% static 'fitness/leaflet-providers.js' %}"></script>
+<script src="{% static 'fitness/activity-map.js' %}"></script>
+<style>
+    #map {
+        width: 600px;
+        height: 400px;
+    }
+</style>
+<script>
+$( document ).ready(function() {
+    create_map("{% url 'activity-detail' object.id %}");
+});
+</script>
+{% endblock %}
 
 {% block content %}
     <h1>{{ object.time }}</h1>
     <p>{{ object.name }}</p>
+    <div id="map"></div>
 {% endblock %}

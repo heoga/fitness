@@ -1,10 +1,23 @@
+{% load bootstrap3 %}
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <link href="{% static 'fitness/cyborg.css' %}" rel="stylesheet">
+    <link href="{% static 'fitness/cyborg_extra.css' %}" rel="stylesheet">
+    {% bootstrap_javascript %}
+    {% block header %}
+    {% endblock %}
 </head>
+<script>
+    {% block scripts %}
+    {% endblock %}
+</script>
 <body>
+{% bootstrap_messages %}
 {% block content %}
 {% endblock %}
 </body>

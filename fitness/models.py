@@ -32,14 +32,35 @@ class Activity(models.Model):
             last_point = point
         return trimp
 
+    def track(self):
+        return [
+            (a.latitude, a.longitude) for a in Point.objects.filter(lap__activity=self).order_by('time')
+        ]
+
+    def svg_points(self):
+        track = self.track()
+        max_latitude = max(a[0] for a in track)
+        min_latitude = min(a[0] for a in track)
+        latitude_range = max_latitude - min_latitude
+        max_longitude = max(a[1] for a in track)
+        min_longitude = min(a[1] for a in track)
+        longitude_range = max_longitude - min_longitude
+        return [
+            (
+                30 * (a[1] - min_longitude) / longitude_range,
+                30 * (1 - (a[0] - min_latitude) / latitude_range),
+            )
+            for a in track
+        ]
+
 
 class Lap(models.Model):
-    activity = models.ForeignKey(Activity)
+    activity = models.ForeignKey(Activity, related_name='laps')
     lap = models.IntegerField()
 
 
 class Point(models.Model):
-    lap = models.ForeignKey(Lap)
+    lap = models.ForeignKey(Lap, related_name='points')
     time = models.DateTimeField()
     latitude = models.FloatField()
     longitude = models.FloatField()

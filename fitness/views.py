@@ -5,8 +5,10 @@ from pygal.style import NeonStyle
 
 from django.http import HttpResponse
 from django.views.generic import ListView, DetailView
+from rest_framework import viewsets
 
-from fitness.models import Activity
+from fitness.models import Activity, Lap, Point
+from fitness.serializers import ActivitySerializer, LapSerializer, PointSerializer
 
 
 class ActivityList(ListView):
@@ -17,6 +19,36 @@ class ActivityList(ListView):
 class ActivityDetail(DetailView):
     template_name = 'fitness/activity_detail.html'
     model = Activity
+
+
+class ActivitySVG(DetailView):
+    template_name = 'fitness/activity.svg'
+    model = Activity
+
+
+class ActivityViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows users to be viewed or edited.
+    """
+    queryset = Activity.objects.all()
+    serializer_class = ActivitySerializer
+
+
+class LapViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows groups to be viewed or edited.
+    """
+    queryset = Lap.objects.all()
+    serializer_class = LapSerializer
+
+
+class PointViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows groups to be viewed or edited.
+    """
+    queryset = Point.objects.all()
+    serializer_class = PointSerializer
+
 
 
 class DataPoint(object):

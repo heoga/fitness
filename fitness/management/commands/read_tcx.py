@@ -40,9 +40,11 @@ def read_tcx(filename):
             activity = Activity(name=name, time=start)
             activity.save()
             activities.append(activity)
+            saved_lap = False
             for index, xml_lap in enumerate(xml_activity.findall('default:Lap', NAMESPACES), start=1):
                 lap = Lap(activity=activity, lap=index)
                 lap.save()
+                saved_point = False
                 for xml_track in xml_lap.findall('default:Track', NAMESPACES):
                     for xml_point in xml_track.findall('default:Trackpoint', NAMESPACES):
                         try:
@@ -73,4 +75,11 @@ def read_tcx(filename):
                             cadence=cadence
                         )
                         point.save()
+                        saved_point = True
+                if not saved_point:
+                    lap.delete()
+                else:
+                    saved_lap = True
+            if not saved_lap:
+                activity.delete()
     return activities
