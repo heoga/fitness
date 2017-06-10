@@ -14,6 +14,7 @@ from fitness.serializers import ActivitySerializer, LapSerializer, PointSerializ
 class ActivityList(ListView):
     template_name = 'fitness/activity_list.html'
     model = Activity
+    paginate_by = 30
 
 
 class ActivityDetail(DetailView):
