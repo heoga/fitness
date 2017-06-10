@@ -7,21 +7,29 @@ class Activity(models.Model):
     name = models.CharField(max_length=128)
     time = models.DateTimeField()
 
+    class Meta:
+        ordering = ['-time']
+
+    def points_with_heart_rate(self):
+        return Point.objects.filter(heart_rate__isnull=False,lap__activity=self).order_by('time')
+
     def trimp(self, minimum, maximum, male=True):
         trimp = 0
         last_point = None
         heart_range = maximum - minimum
         exponent = 1.92 if male else 1.67
-        for lap in self.lap_set.all().order_by('lap'):
-            for point in lap.point_set.all().order_by('time'):
-                if last_point is not None:
-                    minutes = (point.time - last_point.time).total_seconds() / 60.0
-                    average_heart_rate = (point.heart_rate + last_point.heart_rate) / 2
-                    reserve = max((average_heart_rate - minimum) / heart_range, 0)
-                    trimp += (
-                        minutes * reserve * 0.64 * math.exp(exponent * reserve)
-                    )
-                last_point = point
+        points = self.points_with_heart_rate()
+        if not points:
+            return None
+        for point in points:
+            if last_point is not None:
+                minutes = (point.time - last_point.time).total_seconds() / 60.0
+                average_heart_rate = (point.heart_rate + last_point.heart_rate) / 2
+                reserve = max((average_heart_rate - minimum) / heart_range, 0)
+                trimp += (
+                    minutes * reserve * 0.64 * math.exp(exponent * reserve)
+                )
+            last_point = point
         return trimp
 
 
@@ -36,5 +44,5 @@ class Point(models.Model):
     latitude = models.FloatField()
     longitude = models.FloatField()
     altitude = models.FloatField()
-    heart_rate = models.FloatField()
-    cadence = models.FloatField()
+    heart_rate = models.FloatField(null=True)
+    cadence = models.FloatField(null=True)

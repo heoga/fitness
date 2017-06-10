@@ -4,8 +4,14 @@ import math
 from pygal.style import NeonStyle
 
 from django.http import HttpResponse
+from django.views.generic import ListView
 
 from fitness.models import Activity
+
+
+class ActivityList(ListView):
+    template_name = 'fitness/activity_list.html'
+    model = Activity
 
 
 class DataPoint(object):
@@ -27,7 +33,7 @@ class DataPoint(object):
 
 
 def render_trimp(request):
-    activities = Activity.objects.all()
+    activities = [a for a in Activity.objects.all() if a.points_with_heart_rate()]
     min_heart = 50
     max_heart = 203
     start = min(a.time.date() for a in activities)
@@ -36,7 +42,6 @@ def render_trimp(request):
         (start + datetime.timedelta(days=i)) for i in range(0, (end - start).days + 1)
     ]}
     for activity in activities:
-        print(activity.trimp(min_heart, max_heart))
         calendar[activity.time.date()].trimp += activity.trimp(min_heart, max_heart)
     points = sorted(calendar.values(), key=lambda h: h.date)
     for index, point in enumerate(points):
@@ -45,13 +50,9 @@ def render_trimp(request):
         last_point = point
     dateline = pygal.DateLine(x_label_rotation=35, style=NeonStyle, legend_at_bottom=True, width=1024)
     dateline.title = 'Fitness over time'
-    # datetimeline.x_labels = [a.date.isoformat() for a in points]
     dateline.add('Fitness', [(a.date, a.fitness) for a in points], dots_size=1)
     dateline.add('Fatigue', [(a.date, a.fatigue) for a in points], show_dots=False)
     dateline.add('Form', [(a.date, a.form) for a in points], show_dots=False)
-    # with open(r'C:\Users\karlo\sample.svg', 'wb') as h:
-    #    h.write(dateline.render())
-    # return HttpResponse(dateline.render())
     return dateline.render_django_response()
 
 

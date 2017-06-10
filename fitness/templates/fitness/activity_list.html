@@ -1,0 +1,11 @@
+{% extends "fitness/base.html" %}
+{% load tz %}
+
+{% block content %}
+    <h2>Activities</h2>
+    <ul>
+        {% for activity in object_list %}
+            <li>{{ activity.time }}</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

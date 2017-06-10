@@ -56,10 +56,13 @@ def read_tcx(filename):
                         try:
                             heart_rate = xml_point.find('default:HeartRateBpm', NAMESPACES).find('default:Value', NAMESPACES).text
                         except AttributeError:
-                            heart_rate = 0
+                            heart_rate = None
                         extensions = xml_point.find('default:Extensions', NAMESPACES)
                         tpx = extensions.find('extension:TPX', NAMESPACES)
-                        cadence = tpx.find('extension:RunCadence', NAMESPACES).text
+                        try:
+                            cadence = tpx.find('extension:RunCadence', NAMESPACES).text
+                        except AttributeError:
+                            cadence = None
                         point = Point(
                             lap=lap,
                             time=time,
