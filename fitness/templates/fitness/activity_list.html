@@ -5,7 +5,7 @@
     <h2>Activities</h2>
     <ul>
         {% for activity in object_list %}
-            <li>{{ activity.time }}</li>
+        <li><a href="{% url 'activity' activity.id %}">{{ activity.time }} {{activity.name}}</a></li>
         {% endfor %}
     </ul>
 {% endblock %}

@@ -4,13 +4,18 @@ import math
 from pygal.style import NeonStyle
 
 from django.http import HttpResponse
-from django.views.generic import ListView
+from django.views.generic import ListView, DetailView
 
 from fitness.models import Activity
 
 
 class ActivityList(ListView):
     template_name = 'fitness/activity_list.html'
+    model = Activity
+
+
+class ActivityDetail(DetailView):
+    template_name = 'fitness/activity_detail.html'
     model = Activity
 
 
