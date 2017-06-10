@@ -6,26 +6,32 @@
     <h2>Activities</h2>
     {% bootstrap_pagination page_obj extra=request.GET.urlencode %}
     <table class="table table-striped table-hover ">
-      <thead>
-        <tr>
-          <th>Icon</th>
-          <th>Time</th>
-          <th>Name</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for activity in object_list %}
-        <tr>
-            <td>
-                <object data="{% url 'activity_svg' activity.id %}" type="image/svg+xml" height="50px" width="50px"s>
-                    <img src="{% url 'activity_svg' activity.id %}" alt="icon">
-                </object>
-            </td>
-            <td>{{ activity.time }}</td>
-            <td><a href="{% url 'activity' activity.id %}">{{activity.name}}</a></td>
-        </tr>
-        {% endfor %}
-      </tbody>
+        <thead>
+            <tr>
+                <th>Icon</th>
+                <th>Time</th>
+                <th>Name</th>
+                <th>Distance</th>
+                <th>Pace</th>
+                <th>Duration</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for activity in object_list %}
+            <tr>
+                <td>
+                    <object data="{% url 'activity_svg' activity.id %}" type="image/svg+xml" height="50px" width="50px"s>
+                        <img src="{% url 'activity_svg' activity.id %}" alt="icon">
+                    </object>
+                </td>
+                <td>{{ activity.time }}</td>
+                <td><a href="{% url 'activity' activity.id %}">{{activity.name}}</a></td>
+                <td>{{activity.total_distance | floatformat}} km</td>
+                <td>{{activity.average_pace_as_string}} min/km</td>
+                <td align="right">{{activity.duration_as_string}}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
     </table>
     {% bootstrap_pagination page_obj extra=request.GET.urlencode %}
 {% endblock %}

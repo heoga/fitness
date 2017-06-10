@@ -21,9 +21,10 @@ class Command(BaseCommand):
         for entry in options['tcx']:
             for filename in glob.glob(entry):
                 activities = read_tcx(filename)
-                for activity in activities:
+                for activity, created in activities:
+                    note = 'Added' if created else 'Modified'
                     self.stdout.write(self.style.SUCCESS(
-                        'Added {} {}'.format(activity.name, activity.time)
+                        '{} {} {}'.format(note, activity.name, activity.time)
                     ))
 
 
@@ -35,25 +36,28 @@ def read_tcx(filename):
         for xml_activity in activity_list.findall('default:Activity', NAMESPACES):
             name = xml_activity.find('default:Notes', NAMESPACES).text
             start = dateutil.parser.parse(xml_activity.find('default:Id', NAMESPACES).text)
-            if Activity.objects.filter(time=start):
-                continue
-            activity = Activity(name=name, time=start)
-            activity.save()
-            activities.append(activity)
+            # if Activity.objects.filter(time=start):
+            #    continue
+            activity, created = Activity.objects.update_or_create(name=name, time=start)
+            activities.append((activity, created))
             saved_lap = False
+            last_time = None
+            last_distance = 0.0
             for index, xml_lap in enumerate(xml_activity.findall('default:Lap', NAMESPACES), start=1):
-                lap = Lap(activity=activity, lap=index)
-                lap.save()
+                lap, unused = Lap.objects.update_or_create(activity=activity, lap=index)
                 saved_point = False
                 for xml_track in xml_lap.findall('default:Track', NAMESPACES):
                     for xml_point in xml_track.findall('default:Trackpoint', NAMESPACES):
                         try:
                             time = dateutil.parser.parse(xml_point.find('default:Time', NAMESPACES).text)
                             position = xml_point.find('default:Position', NAMESPACES)
-                            latitude = position.find('default:LatitudeDegrees', NAMESPACES).text
-                            longitude = position.find('default:LongitudeDegrees', NAMESPACES).text
-                            altitude = xml_point.find('default:AltitudeMeters', NAMESPACES).text
+                            latitude = float(position.find('default:LatitudeDegrees', NAMESPACES).text)
+                            longitude = float(position.find('default:LongitudeDegrees', NAMESPACES).text)
+                            altitude = float(xml_point.find('default:AltitudeMeters', NAMESPACES).text)
+                            distance = float(xml_point.find('default:DistanceMeters', NAMESPACES).text)
                         except AttributeError:
+                            continue
+                        if time == last_time:
                             continue
                         try:
                             heart_rate = xml_point.find('default:HeartRateBpm', NAMESPACES).find('default:Value', NAMESPACES).text
@@ -65,17 +69,35 @@ def read_tcx(filename):
                             cadence = tpx.find('extension:RunCadence', NAMESPACES).text
                         except AttributeError:
                             cadence = None
-                        point = Point(
+                        if last_time is not None:
+                            try:
+                                seconds = (time - last_time).total_seconds()
+                                speed = (distance - last_distance) / seconds
+                            except:
+                                print(filename, time)
+                                raise
+                        else:
+                            speed = 0.0
+                        matching_points = Point.objects.filter(lap=lap, time=time)
+                        if matching_points.count() > 1:
+                            for point in matching_points:
+                                point.delete()
+                        point, unused = Point.objects.update_or_create(
                             lap=lap,
                             time=time,
-                            latitude=latitude,
-                            longitude=longitude,
-                            altitude=altitude,
-                            heart_rate=heart_rate,
-                            cadence=cadence
+                            defaults={
+                                'latitude': latitude,
+                                'longitude': longitude,
+                                'altitude': altitude,
+                                'heart_rate': heart_rate,
+                                'cadence': cadence,
+                                'distance': distance,
+                                'speed': speed,
+                            }
                         )
-                        point.save()
                         saved_point = True
+                        last_time = time
+                        last_distance = distance
                 if not saved_point:
                     lap.delete()
                 else:

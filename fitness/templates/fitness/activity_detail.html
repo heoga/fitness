@@ -29,7 +29,10 @@ $( document ).ready(function() {
 {% endblock %}
 
 {% block content %}
-    <h1>{{ object.time }}</h1>
-    <p>{{ object.name }}</p>
+    <h1>{{ object.name }}</h1>
+    <div>{{ object.time }}</div>
+    <div>{{ object.total_distance | floatformat}} km</div>
+    <div>{{ object.duration_as_string }}</div>
+    <div>{{ object.average_pace_as_string }} min/km</div>
     <div id="map"></div>
 {% endblock %}

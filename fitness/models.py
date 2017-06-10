@@ -32,9 +32,12 @@ class Activity(models.Model):
             last_point = point
         return trimp
 
+    def points(self):
+        return Point.objects.filter(lap__activity=self).order_by('time')
+
     def track(self):
         return [
-            (a.latitude, a.longitude) for a in Point.objects.filter(lap__activity=self).order_by('time')
+            (a.latitude, a.longitude) for a in self.points()
         ]
 
     def svg_points(self):
@@ -53,6 +56,42 @@ class Activity(models.Model):
             for a in track
         ]
 
+    def total_distance(self, unit='km'):
+        distance = self.points().last().distance
+        if unit == 'km':
+            return distance / 1000.0
+        return distance
+
+    def total_time(self):
+        return (self.points().last().time - self.points().first().time).total_seconds()
+
+    def duration_as_string(self):
+        total_seconds = int(self.total_time())
+        total_minutes = int(total_seconds // 60)
+        hours = int(total_minutes // 60)
+        minutes = total_minutes - (60 * hours)
+        seconds = total_seconds - (60 * total_minutes)
+        if hours:
+            return '{}:{:0>2}:{:0>2}'.format(hours, minutes, seconds)
+        else:
+            return '{}:{:0>2}'.format(minutes, seconds)
+
+
+    def average_pace(self):
+        seconds = self.total_time()
+        distance = self.total_distance()
+        if distance == 0:
+            pace = 0
+        else:
+            pace = (seconds / 60.0) / distance
+        return pace
+
+    def average_pace_as_string(self):
+        pace = self.average_pace()
+        minutes = int(pace)
+        seconds = int((pace - minutes) * 60)
+        return '{}:{:0>2}'.format(minutes, seconds)
+
 
 class Lap(models.Model):
     activity = models.ForeignKey(Activity, related_name='laps')
@@ -67,3 +106,5 @@ class Point(models.Model):
     altitude = models.FloatField()
     heart_rate = models.FloatField(null=True)
     cadence = models.FloatField(null=True)
+    distance = models.FloatField(default=0.0)
+    speed = models.FloatField(default=0.0)
