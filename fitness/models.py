@@ -76,7 +76,6 @@ class Activity(models.Model):
         else:
             return '{}:{:0>2}'.format(minutes, seconds)
 
-
     def average_pace(self):
         seconds = self.total_time()
         distance = self.total_distance()
@@ -91,6 +90,21 @@ class Activity(models.Model):
         minutes = int(pace)
         seconds = int((pace - minutes) * 60)
         return '{}:{:0>2}'.format(minutes, seconds)
+
+    def elevation_gain(self):
+        gain = 0
+        last_elevation = None
+        points_up = 0
+        for point in self.points():
+            if last_elevation is not None and point.altitude > last_elevation:
+                if points_up < 2:
+                    points_up += 1
+                else:
+                    gain += (int(point.altitude) - int(last_elevation))
+            else:
+                points_up = 0
+            last_elevation = point.altitude
+        return gain
 
 
 class Lap(models.Model):
