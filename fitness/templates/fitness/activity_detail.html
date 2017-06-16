@@ -14,7 +14,10 @@
    integrity="sha512-A7vV8IFfih/D732iSSKi20u/ooOfj/AGehOKq0f4vLT1Zr2Y+RX7C+w8A1gaSasGtRUZpF/NZgzSAu4/Gc41Lg=="
    crossorigin=""></script>
 <script src="{% static 'fitness/leaflet-providers.js' %}"></script>
-<script src="{% static 'fitness/activity-map.js' %}"></script>
+<script src="{% static 'fitness/leaflet.groupedlayercontrol.min.js' %}"></script>
+<link rel="stylesheet" href="{% static 'fitness/leaflet.groupedlayercontrol.min.css' %}"/>
+<script src="{% static 'fitness/map-and-chart.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"></script>
 <style>
     #map {
         width: 600px;
@@ -23,7 +26,7 @@
 </style>
 <script>
 $( document ).ready(function() {
-    create_map("{% url 'activity-detail' object.id %}");
+    constructView("{% url 'activity-detail' object.id %}");
 });
 </script>
 {% endblock %}
@@ -35,5 +38,7 @@ $( document ).ready(function() {
     <div>{{ object.duration_as_string }}</div>
     <div>{{ object.average_pace_as_string }} min/km</div>
     <div>{{ object.elevation_gain }} m</div>
-    <div id="map"></div>
+    <div>{{ object.points.count }} data points</div>
+    <div id="map" style="width: 100%; height: 400px"></div>
+    <canvas id="myChart" style="width: 100%; height: 400px"></canvas>
 {% endblock %}

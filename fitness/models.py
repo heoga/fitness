@@ -106,6 +106,119 @@ class Activity(models.Model):
             last_elevation = point.altitude
         return gain
 
+    def reduced_points(self):
+        unsampled_count = self.points().count()
+        desired_points = 200
+        factor = unsampled_count // desired_points
+        output_points = []
+        current_points = []
+        out_count = -1
+
+        class ReducedPoint(object):
+            def __init__(self, altitude, speed, distance, id, longitude, latitude, heart_rate=None):
+                self.altitude = altitude
+                self.speed = speed
+                self.distance = distance
+                self.id = id
+                self.longitude = longitude
+                self.latitude = latitude
+                self.heart_rate = heart_rate
+
+        heart_rate_points = self.points_with_heart_rate().count()
+        if heart_rate_points:
+            input_points = self.points_with_heart_rate()
+        else:
+            input_points = self.points()
+
+        for index, point in enumerate(input_points):
+            current_points.append(point)
+            if index % factor == 0:
+                out_count += 1
+                new_point = ReducedPoint(**{
+                    'altitude': sum(p.altitude for p in current_points) / len(current_points),
+                    'speed': sum(p.speed for p in current_points) / len(current_points),
+                    'distance': sum(p.distance for p in current_points) / len(current_points),
+                    'id': out_count,
+                    'longitude': sum(p.longitude for p in current_points) / len(current_points),
+                    'latitude': sum(p.latitude for p in current_points) / len(current_points),
+                })
+                if heart_rate_points:
+                    new_point.heart_rate = sum(p.heart_rate for p in current_points) / len(current_points)
+                output_points.append(new_point)
+                current_points = []
+        return output_points
+
+    def geo_json(self):
+        data = []
+        for index, point in enumerate(self.reduced_points()):
+            if index > 0:
+                geo_point = {
+                    'type': 'Feature',
+                    'properties': {
+                        'id': index - 1,
+                        'elevation': point.altitude,
+                        'speed': point.speed,
+                        'distance': point.distance,
+                        # 'heart_rate': point.heart_rate,
+                    },
+                    'geometry': {
+                        'type': 'LineString',
+                        'coordinates': [
+                            [
+                                last_point.longitude,
+                                last_point.latitude,
+                            ],
+                            [
+                                point.longitude,
+                                point.latitude,
+                            ]
+                        ]
+                    }
+                }
+                if point.heart_rate is not None:
+                    geo_point['properties']['heart_rate'] = point.heart_rate
+                data.append(geo_point)
+            last_point = point
+        first = self.points().first()
+        last = self.points().last()
+        data.append({
+            "type": "Feature",
+            "properties": {
+                "id": "progress",
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    first.longitude, first.latitude
+                ]
+            }
+        })
+        data.append({
+            "type": "Feature",
+            "properties": {
+                "id": "start",
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    first.longitude, first.latitude
+                ]
+            }
+        })
+        data.append({
+            "type": "Feature",
+            "properties": {
+                "id": "stop",
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    last.longitude, last.latitude
+                ]
+            }
+        })
+        return data
+
 
 class Lap(models.Model):
     activity = models.ForeignKey(Activity, related_name='laps')
@@ -122,3 +235,6 @@ class Point(models.Model):
     cadence = models.FloatField(null=True)
     distance = models.FloatField(default=0.0)
     speed = models.FloatField(default=0.0)
+
+    def pace(self):
+        return 1.0 / ((60.0 / 1000.0) * self.speed)

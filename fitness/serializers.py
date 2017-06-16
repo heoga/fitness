@@ -6,7 +6,7 @@ from fitness.models import Activity, Lap, Point
 class ActivitySerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Activity
-        fields = ('url', 'name', 'time', 'laps', 'track', 'svg_points')
+        fields = ('url', 'name', 'time', 'laps', 'geo_json', 'svg_points')
 
 
 class LapSerializer(serializers.HyperlinkedModelSerializer):
