@@ -309,7 +309,7 @@ function chartDataSets() {
     var fields = geoJsonFields();
     var chartData = {
         'dataset': [],
-        'yAxes': []
+        'yAxes': [],
     };
     for (var i = 0; i < fields.length; i++) {
         key = fields[i];
@@ -356,14 +356,22 @@ function constructView(activityURL){
         generateMap();
         var ctx = document.getElementById("myChart");
         chartData = chartDataSets();
-        console.log(chartData);
+        var maxX = 0;
+        var distances = geoJsonToChart('distance');
+        console.log
+        for (var i=0; i < distances.length; i++){
+            if (distances[i].x > maxX) {
+                maxX = distances[i].x;
+            }
+        }
+        console.log(chartData, maxX);
         var scatterChart = new Chart(ctx, {
             type: 'scatter',
             data: {
                 datasets: chartData.dataset
             },
             options: {
-                responsive: false,
+                //responsive: false,
                 intersect: false,
                 scales: {
                     xAxes: [{
@@ -372,6 +380,13 @@ function constructView(activityURL){
                         scaleLabel: {
                             display: true,
                             labelString: 'Distance'
+                        },
+                        ticks: {
+                            // Include a dollar sign in the ticks
+                            callback: function(value, index, values) {
+                                return (value / 1000).toFixed(2);
+                            },
+                            max: maxX
                         }
                     }],
                     yAxes: chartData.yAxes
