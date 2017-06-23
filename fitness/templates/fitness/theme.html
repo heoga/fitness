@@ -1,2 +1,6 @@
 {% load static %}
-<link href="{% static 'fitness/cyborg.css' %}" rel="stylesheet">
+{% if view.request.user.is_authenticated %}
+<link href="{% static 'fitness/themes/' %}{{ view.request.user.profile.theme.name.lower }}.css" rel="stylesheet">
+{% else %}
+<link href="{% static 'fitness/themes/cyborg.css' %}" rel="stylesheet">
+{% endif %}

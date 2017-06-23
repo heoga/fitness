@@ -1,0 +1,39 @@
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Fitness</a>
+        </div>
+
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav">
+            <li><a href="{% url 'activity_list' %}">List</a></li>
+            <li><a href="{% url 'render_trimp' %}">Trimp</a></li>
+            <li><a href="{% url 'api-root' %}">API</a></li>
+          </ul>
+          <ul class="nav navbar-nav navbar-right">
+            {% if view.request.user.is_authenticated %}
+                <li class="dropdown">
+                  <a href="#" id="user_menu" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+                      {{view.request.user.get_full_name}} <span class="caret"></span>
+                  </a>
+                  <ul class="dropdown-menu" role="menu">
+                    <li><a id="control_panel" href="{% url 'control_panel' %}">Control Panel</a></li>
+                    <li class="divider"></li>
+                    <li><a href="{% url 'logout' %}">Logout</a></li>
+                  </ul>
+                </li>
+            {% else %}
+                <li>
+                    <a href="{% url 'login' %}">Login {{request}}</a>
+                </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>

@@ -1,0 +1,12 @@
+{% extends "fitness/base.html" %}
+{% load bootstrap3 %}
+{% block content %}
+<form action="{% url 'control_panel' %}" method="post" class="form">
+    {% csrf_token %}
+    {% bootstrap_form user_form %}
+    {% bootstrap_form profile_form %}
+    {% buttons %}
+        {% include "fitness/save.html" %}
+    {% endbuttons %}
+</form>
+{% endblock %}

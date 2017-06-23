@@ -10,6 +10,7 @@ router.register(r'laps', views.LapViewSet)
 router.register(r'points', views.PointViewSet)
 
 urlpatterns = [
+    url(r'^control_panel/$', views.ControlPanelView.as_view(), name='control_panel'),
     url(r'^trimp/$', views.render_trimp, name='render_trimp'),
     url(r'^list/$', views.ActivityList.as_view(), name='activity_list'),
     url(r'^activity/(?P<pk>[-\w]+)/$', views.ActivityDetail.as_view(), name='activity'),

@@ -262,7 +262,11 @@ function generateMap() {
     L.control.groupedLayers(baseLayers, groupedOverlays, {
         exclusiveGroups: ["Route"],
     }).addTo(displayMap);
-    cartoDark.addTo(displayMap);
+    if (darkBackground) {
+        cartoDark.addTo(displayMap);
+    } else {
+        cartoLight.addTo(displayMap);
+    }
     for (var routeLine in routeGeoJsons) {
         routeGeoJsons[routeLine].addTo(displayMap);
         displayMap.fitBounds(routeGeoJsons[routeLine].getBounds());

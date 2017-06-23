@@ -16,6 +16,10 @@
 <script src="{% static 'fitness/leaflet-providers.js' %}"></script>
 <script src="{% static 'fitness/leaflet.groupedlayercontrol.min.js' %}"></script>
 <link rel="stylesheet" href="{% static 'fitness/leaflet.groupedlayercontrol.min.css' %}"/>
+<script>
+    darkBackground={% if  view.request.user.profile.theme.dark %}true{% else %}false{% endif %};
+    console.log('Background', darkBackground);
+</script>
 <script src="{% static 'fitness/map-and-chart.js' %}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"></script>
 <style>
