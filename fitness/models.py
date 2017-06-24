@@ -137,7 +137,7 @@ class Activity(models.Model):
         if isinstance(points[0][key], datetime.datetime):
             return points[0][key]
         try:
-            return sum(p[key] for p in points) / len(points)
+            return (sum(p[key] or 0 for p in points) / len(points)) or None
         except:
             print(key, points)
             raise
@@ -147,15 +147,11 @@ class Activity(models.Model):
         current_points = []
         out_count = -1
 
-        heart_rate_points = self.has_heart_rate()
-        if heart_rate_points:
-            input_points = self.points_with_heart_rate()
-        else:
-            input_points = self.points()
+        input_points = self.point_stream()
 
         unsampled_count = len(input_points)
         desired_points = 200
-        factor = unsampled_count // desired_points
+        factor = max(unsampled_count // desired_points, 1)
 
         for index, point in enumerate(input_points):
             current_points.append(point)
