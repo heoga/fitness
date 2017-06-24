@@ -5,6 +5,10 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.contrib.postgres.fields import JSONField
+from django.core.serializers.json import DjangoJSONEncoder
+
+import dateutil.parser
 
 
 class Theme(models.Model):
@@ -38,12 +42,13 @@ class Activity(models.Model):
     duration = models.FloatField(null=True)
     elevation = models.FloatField(null=True)
     data_points = models.IntegerField(null=True)
+    stream = JSONField(encoder=DjangoJSONEncoder, null=True)
 
     class Meta:
         ordering = ['-time']
 
     def points_with_heart_rate(self):
-        return [a for a in self.stream() if a.get('heart_rate')]
+        return [a for a in self.point_stream() if a.get('heart_rate')]
 
     def trimp(self, minimum, maximum, male=True):
         trimp = 0
@@ -67,12 +72,18 @@ class Activity(models.Model):
     def points(self):
         return Point.objects.filter(lap__activity=self).order_by('time')
 
-    def stream(self):
-        return [a.as_dictionary() for a in self.points()]
+    @staticmethod
+    def decompress(point):
+        expanded = point.copy()
+        expanded['time'] = dateutil.parser.parse(point['time'])
+        return expanded
+
+    def point_stream(self):
+        return sorted([self.decompress(x) for x in self.stream.values()], key=lambda h: h['time'])
 
     def track(self):
         return [
-            (a['latitude'], a['longitude']) for a in self.stream()
+            (a['latitude'], a['longitude']) for a in self.point_stream()
         ]
 
     def svg_points(self):
@@ -128,7 +139,11 @@ class Activity(models.Model):
     def average(points, key):
         if isinstance(points[0][key], datetime.datetime):
             return points[0][key]
-        return sum(p[key] for p in points) / len(points)
+        try:
+            return sum(p[key] for p in points) / len(points)
+        except:
+            print(key, points)
+            raise
 
     def reduced_points(self):
         output_points = []
