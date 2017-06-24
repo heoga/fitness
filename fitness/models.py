@@ -34,6 +34,10 @@ def save_user_profile(sender, instance, **kwargs):
 class Activity(models.Model):
     name = models.CharField(max_length=128)
     time = models.DateTimeField()
+    distance = models.FloatField(null=True)
+    duration = models.FloatField(null=True)
+    elevation = models.FloatField(null=True)
+    data_points = models.IntegerField(null=True)
 
     class Meta:
         ordering = ['-time']
@@ -87,17 +91,13 @@ class Activity(models.Model):
             for a in track
         ]
 
-    def total_distance(self, unit='km'):
-        distance = self.stream()[-1]['distance']
+    def display_distance(self, unit='km'):
         if unit == 'km':
-            return distance / 1000.0
-        return distance
-
-    def total_time(self):
-        return (self.stream()[-1]['time'] - self.stream()[0]['time']).total_seconds()
+            return self.distance / 1000.0
+        return self.distance
 
     def duration_as_string(self):
-        total_seconds = int(self.total_time())
+        total_seconds = int(self.duration)
         total_minutes = int(total_seconds // 60)
         hours = int(total_minutes // 60)
         minutes = total_minutes - (60 * hours)
@@ -108,12 +108,11 @@ class Activity(models.Model):
             return '{}:{:0>2}'.format(minutes, seconds)
 
     def average_pace(self):
-        seconds = self.total_time()
-        distance = self.total_distance()
+        distance = self.display_distance()
         if distance == 0:
             pace = 0
         else:
-            pace = (seconds / 60.0) / distance
+            pace = (self.duration / 60.0) / distance
         return pace
 
     def average_pace_as_string(self):
@@ -121,21 +120,6 @@ class Activity(models.Model):
         minutes = int(pace)
         seconds = int((pace - minutes) * 60)
         return '{}:{:0>2}'.format(minutes, seconds)
-
-    def elevation_gain(self):
-        gain = 0
-        last_elevation = None
-        points_up = 0
-        for point in self.stream():
-            if last_elevation is not None and point['altitude'] > last_elevation:
-                if points_up < 2:
-                    points_up += 1
-                else:
-                    gain += (int(point['altitude']) - int(last_elevation))
-            else:
-                points_up = 0
-            last_elevation = point['altitude']
-        return gain
 
     def has_heart_rate(self):
         return bool(self.points_with_heart_rate())

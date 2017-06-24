@@ -26,7 +26,7 @@
                 </td>
                 <td>{{ activity.time }}</td>
                 <td><a href="{% url 'activity' activity.id %}">{{activity.name}}</a></td>
-                <td>{{activity.total_distance | floatformat}} km</td>
+                <td>{{activity.display_distance | floatformat}} km</td>
                 <td>{{activity.average_pace_as_string}} min/km</td>
                 <td align="right">{{activity.duration_as_string}}</td>
             </tr>

@@ -28,6 +28,22 @@ class Command(BaseCommand):
                     ))
 
 
+def elevation_gain(activity):
+    gain = 0
+    last_elevation = None
+    points_up = 0
+    for point in activity.stream():
+        if last_elevation is not None and point['altitude'] > last_elevation:
+            if points_up < 2:
+                points_up += 1
+            else:
+                gain += (int(point['altitude']) - int(last_elevation))
+        else:
+            points_up = 0
+        last_elevation = point['altitude']
+    return gain
+
+
 def read_tcx(filename):
     tree = ET.parse(filename)
     tcx = tree.getroot()
@@ -38,11 +54,17 @@ def read_tcx(filename):
             start = dateutil.parser.parse(xml_activity.find('default:Id', NAMESPACES).text)
             # if Activity.objects.filter(time=start):
             #    continue
-            activity, created = Activity.objects.update_or_create(name=name, time=start)
+            activity, created = Activity.objects.update_or_create(name=name, time=start, defaults={
+                'distance': None,
+                'duration': None,
+                'elevation': None,
+                'data_points': None,
+            })
             activities.append((activity, created))
             saved_lap = False
             last_time = None
             last_distance = 0.0
+            data_points = 0
             for index, xml_lap in enumerate(xml_activity.findall('default:Lap', NAMESPACES), start=1):
                 lap, unused = Lap.objects.update_or_create(activity=activity, lap=index)
                 saved_point = False
@@ -95,6 +117,7 @@ def read_tcx(filename):
                                 'speed': speed,
                             }
                         )
+                        data_points += 1
                         saved_point = True
                         last_time = time
                         last_distance = distance
@@ -104,4 +127,10 @@ def read_tcx(filename):
                     saved_lap = True
             if not saved_lap:
                 activity.delete()
+            else:
+                activity.distance = last_distance
+                activity.duration = (last_time - start).total_seconds()
+                activity.elevation = elevation_gain(activity)
+                activity.data_points = data_points
+                activity.save()
     return activities
