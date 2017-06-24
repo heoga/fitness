@@ -15,8 +15,8 @@ from django.views import View
 from fitness.forms.profile import ProfileForm
 from fitness.forms.user import UserForm
 
-from fitness.models import Activity, Lap, Point
-from fitness.serializers import ActivitySerializer, LapSerializer, PointSerializer
+from fitness.models import Activity
+from fitness.serializers import ActivitySerializer
 
 
 class ActivityList(ListView):
@@ -41,23 +41,6 @@ class ActivityViewSet(viewsets.ModelViewSet):
     """
     queryset = Activity.objects.all()
     serializer_class = ActivitySerializer
-
-
-class LapViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows groups to be viewed or edited.
-    """
-    queryset = Lap.objects.all()
-    serializer_class = LapSerializer
-
-
-class PointViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows groups to be viewed or edited.
-    """
-    queryset = Point.objects.all()
-    serializer_class = PointSerializer
-
 
 
 class DataPoint(object):

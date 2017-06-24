@@ -69,9 +69,6 @@ class Activity(models.Model):
             last_point = point
         return trimp
 
-    def points(self):
-        return Point.objects.filter(lap__activity=self).order_by('time')
-
     @staticmethod
     def decompress(point):
         expanded = point.copy()
@@ -242,35 +239,3 @@ class Activity(models.Model):
             }
         })
         return data
-
-
-class Lap(models.Model):
-    activity = models.ForeignKey(Activity, related_name='laps')
-    lap = models.IntegerField()
-
-
-class Point(models.Model):
-    lap = models.ForeignKey(Lap, related_name='points')
-    time = models.DateTimeField()
-    latitude = models.FloatField()
-    longitude = models.FloatField()
-    altitude = models.FloatField()
-    heart_rate = models.FloatField(null=True)
-    cadence = models.FloatField(null=True)
-    distance = models.FloatField(default=0.0)
-    speed = models.FloatField(default=0.0)
-
-    def pace(self):
-        return 1.0 / ((60.0 / 1000.0) * self.speed)
-
-    def as_dictionary(self):
-        return {
-            'time': self.time,
-            'latitude': self.latitude,
-            'longitude': self.longitude,
-            'altitude': self.altitude,
-            'heart_rate': self.heart_rate,
-            'cadence': self.cadence,
-            'distance': self.distance,
-            'speed': self.speed,
-        }
