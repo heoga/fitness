@@ -1,4 +1,5 @@
 import math
+import datetime
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -38,7 +39,7 @@ class Activity(models.Model):
         ordering = ['-time']
 
     def points_with_heart_rate(self):
-        return Point.objects.filter(heart_rate__isnull=False,lap__activity=self).order_by('time')
+        return [a for a in self.stream() if a.get('heart_rate')]
 
     def trimp(self, minimum, maximum, male=True):
         trimp = 0
@@ -50,8 +51,8 @@ class Activity(models.Model):
             return None
         for point in points:
             if last_point is not None:
-                minutes = (point.time - last_point.time).total_seconds() / 60.0
-                average_heart_rate = (point.heart_rate + last_point.heart_rate) / 2
+                minutes = (point['time'] - last_point['time']).total_seconds() / 60.0
+                average_heart_rate = (point['heart_rate'] + last_point['heart_rate']) / 2
                 reserve = max((average_heart_rate - minimum) / heart_range, 0)
                 trimp += (
                     minutes * reserve * 0.64 * math.exp(exponent * reserve)
@@ -62,9 +63,12 @@ class Activity(models.Model):
     def points(self):
         return Point.objects.filter(lap__activity=self).order_by('time')
 
+    def stream(self):
+        return [a.as_dictionary() for a in self.points()]
+
     def track(self):
         return [
-            (a.latitude, a.longitude) for a in self.points()
+            (a['latitude'], a['longitude']) for a in self.stream()
         ]
 
     def svg_points(self):
@@ -84,13 +88,13 @@ class Activity(models.Model):
         ]
 
     def total_distance(self, unit='km'):
-        distance = self.points().last().distance
+        distance = self.stream()[-1]['distance']
         if unit == 'km':
             return distance / 1000.0
         return distance
 
     def total_time(self):
-        return (self.points().last().time - self.points().first().time).total_seconds()
+        return (self.stream()[-1]['time'] - self.stream()[0]['time']).total_seconds()
 
     def duration_as_string(self):
         total_seconds = int(self.total_time())
@@ -122,92 +126,86 @@ class Activity(models.Model):
         gain = 0
         last_elevation = None
         points_up = 0
-        for point in self.points():
-            if last_elevation is not None and point.altitude > last_elevation:
+        for point in self.stream():
+            if last_elevation is not None and point['altitude'] > last_elevation:
                 if points_up < 2:
                     points_up += 1
                 else:
-                    gain += (int(point.altitude) - int(last_elevation))
+                    gain += (int(point['altitude']) - int(last_elevation))
             else:
                 points_up = 0
-            last_elevation = point.altitude
+            last_elevation = point['altitude']
         return gain
 
+    def has_heart_rate(self):
+        return bool(self.points_with_heart_rate())
+
+    @staticmethod
+    def average(points, key):
+        if isinstance(points[0][key], datetime.datetime):
+            return points[0][key]
+        return sum(p[key] for p in points) / len(points)
+
     def reduced_points(self):
-        unsampled_count = self.points().count()
-        desired_points = 200
-        factor = unsampled_count // desired_points
         output_points = []
         current_points = []
         out_count = -1
 
-        class ReducedPoint(object):
-            def __init__(self, altitude, speed, distance, id, longitude, latitude, heart_rate=None):
-                self.altitude = altitude
-                self.speed = speed
-                self.distance = distance
-                self.id = id
-                self.longitude = longitude
-                self.latitude = latitude
-                self.heart_rate = heart_rate
-
-        heart_rate_points = self.points_with_heart_rate().count()
+        heart_rate_points = self.has_heart_rate()
         if heart_rate_points:
             input_points = self.points_with_heart_rate()
         else:
             input_points = self.points()
 
+        unsampled_count = len(input_points)
+        desired_points = 200
+        factor = unsampled_count // desired_points
+
         for index, point in enumerate(input_points):
             current_points.append(point)
             if index % factor == 0:
                 out_count += 1
-                new_point = ReducedPoint(**{
-                    'altitude': sum(p.altitude for p in current_points) / len(current_points),
-                    'speed': sum(p.speed for p in current_points) / len(current_points),
-                    'distance': sum(p.distance for p in current_points) / len(current_points),
-                    'id': out_count,
-                    'longitude': sum(p.longitude for p in current_points) / len(current_points),
-                    'latitude': sum(p.latitude for p in current_points) / len(current_points),
-                })
-                if heart_rate_points:
-                    new_point.heart_rate = sum(p.heart_rate for p in current_points) / len(current_points)
+                keys = current_points[0].keys()
+                new_point = {
+                    k: self.average(current_points, k) for k in keys
+                }
                 output_points.append(new_point)
                 current_points = []
         return output_points
 
     def geo_json(self):
         data = []
-        for index, point in enumerate(self.reduced_points()):
+        points = self.reduced_points()
+        for index, point in enumerate(points):
             if index > 0:
                 geo_point = {
                     'type': 'Feature',
                     'properties': {
                         'id': index - 1,
-                        'elevation': point.altitude,
-                        'speed': point.speed,
-                        'distance': point.distance,
-                        # 'heart_rate': point.heart_rate,
+                        'elevation': point.get('altitude'),
+                        'speed': point.get('speed'),
+                        'distance': point.get('distance'),
                     },
                     'geometry': {
                         'type': 'LineString',
                         'coordinates': [
                             [
-                                last_point.longitude,
-                                last_point.latitude,
+                                last_point.get('longitude'),
+                                last_point.get('latitude'),
                             ],
                             [
-                                point.longitude,
-                                point.latitude,
+                                point.get('longitude'),
+                                point.get('latitude'),
                             ]
                         ]
                     }
                 }
-                if point.heart_rate is not None:
-                    geo_point['properties']['heart_rate'] = point.heart_rate
+                if point.get('heart_rate') is not None:
+                    geo_point['properties']['heart_rate'] = point.get('heart_rate')
                 data.append(geo_point)
             last_point = point
-        first = self.points().first()
-        last = self.points().last()
+        first = points[0]
+        last = points[-1]
         data.append({
             "type": "Feature",
             "properties": {
@@ -216,7 +214,7 @@ class Activity(models.Model):
             "geometry": {
                 "type": "Point",
                 "coordinates": [
-                    first.longitude, first.latitude
+                    first.get('longitude'), first.get('latitude')
                 ]
             }
         })
@@ -228,7 +226,7 @@ class Activity(models.Model):
             "geometry": {
                 "type": "Point",
                 "coordinates": [
-                    first.longitude, first.latitude
+                    first.get('longitude'), first.get('latitude')
                 ]
             }
         })
@@ -240,7 +238,7 @@ class Activity(models.Model):
             "geometry": {
                 "type": "Point",
                 "coordinates": [
-                    last.longitude, last.latitude
+                    last.get('longitude'), last.get('latitude')
                 ]
             }
         })
@@ -265,3 +263,15 @@ class Point(models.Model):
 
     def pace(self):
         return 1.0 / ((60.0 / 1000.0) * self.speed)
+
+    def as_dictionary(self):
+        return {
+            'time': self.time,
+            'latitude': self.latitude,
+            'longitude': self.longitude,
+            'altitude': self.altitude,
+            'heart_rate': self.heart_rate,
+            'cadence': self.cadence,
+            'distance': self.distance,
+            'speed': self.speed,
+        }
