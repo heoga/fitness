@@ -174,6 +174,8 @@ function getColor(feature, tag) {
     var lineValue = feature.properties[tag];
     var bounds = geoJsonPropertyBounds(tag);
     return (
+        lineValue == null && darkBackground ? '#ffffff' :
+        lineValue == null ? '#000000' :
         lineValue < bounds.min + 0.1 * bounds.range ? '#00e5c4' :
         lineValue < bounds.min + 0.2 * bounds.range ? '#00e075' :
         lineValue < bounds.min + 0.3 * bounds.range ? '#00dc29' :
