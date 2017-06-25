@@ -11,6 +11,7 @@ from django.core.urlresolvers import reverse_lazy
 
 from django.shortcuts import render
 from django.views import View
+from django.views.generic import TemplateView
 
 from fitness.forms.profile import ProfileForm
 from fitness.forms.user import UserForm
@@ -119,4 +120,8 @@ class ControlPanelView(LoginRequiredMixin, View):
             self.request.user.save()
             self.request.user.profile.save()
         return self.get(request, *args, **kwargs)
+
+
+class UploadView(TemplateView):
+    template_name = 'fitness/activity_upload.html'
 

@@ -1,0 +1,43 @@
+{% extends "fitness/base.html" %}
+{% load tz %}
+{% load static %}
+
+{% block header %}
+<link href="{% static 'fitness/bootstrap-fileinput/css/fileinput.min.css' %}" media="all" rel="stylesheet" type="text/css" />
+<script src="{% static 'fitness/bootstrap-fileinput/js/fileinput.min.js' %}"></script>
+<script src="{% static 'fitness/activity-upload.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+    <div>
+        <label class="control-label">Upload TCX</label>
+        <input
+            class="file" type="file" id="chooseTCX" accept=".tcx"
+            multiple data-show-upload="false" data-show-caption="true"
+            data-show-preview="false"
+        >
+    </div>
+    <div>
+        <label class="control-label">Upload GPX</label>
+        <input
+            class="file" type="file" id="chooseGPX" accept=".gpx"
+            multiple data-show-upload="false" data-show-caption="true"
+            data-show-preview="false"
+        >
+    </div>
+    <script>
+        document.querySelector("#chooseTCX").addEventListener('change', readMultipleTCX, false);
+        document.querySelector("#chooseGPX").addEventListener('change', readMultipleGPX, false);
+        // $('#chooseTCX').on('filereset', clearStatusEvent);
+        // $('#chooseGPX').on('filereset', clearStatusEvent);
+        $('#chooseTCX').on('filecleared', clearStatusEvent);
+    </script>
+    <div id="readStatus">Raw</div>
+    <div id="located_runs">
+    </div>
+    <button id="upload" type="submit" class="btn btn-primary" disabled>Upload</button>
+    <script>
+        $("#upload").click(uploadActivities);
+        $("#upload").prop('disabled', true);
+    </script>
+{% endblock %}
