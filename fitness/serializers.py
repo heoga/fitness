@@ -31,10 +31,6 @@ class RunSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=64)
     points = PointSerializer(many=True)
 
-    def is_valid(self, raise_exception=False):
-        print(self.initial_data)
-        return super(RunSerializer, self).is_valid(raise_exception)
-
     def create(self, validated_data):
         points = validated_data['points']
         return Activity.objects.update_or_create(
