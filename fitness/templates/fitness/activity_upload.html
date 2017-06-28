@@ -35,7 +35,11 @@
     <div id="readStatus">Raw</div>
     <div id="located_runs">
     </div>
-    <button id="upload" type="submit" class="btn btn-primary" disabled>Upload</button>
+    <div><button id="upload" type="submit" class="btn btn-primary" disabled>Upload</button></div>
+    <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="40" id="progress"
+    aria-valuemin="0" aria-valuemax="100" style="width:40%" hidden>
+        40% Complete (success)
+    </div>
     <script>
         $("#upload").click(uploadActivities);
         $("#upload").prop('disabled', true);

@@ -3,7 +3,9 @@ readStatus = {
     input: 0,
     output: 0,
     allInput: false,
-    parsedActivities: {}
+    parsedActivities: {},
+    count: 0,
+    uploaded: 0
 }
 function calculateDistance(lat1, lon1, lat2, lon2, unit) {
 	var radlat1 = Math.PI * lat1/180
@@ -188,6 +190,7 @@ function readGPXText(event) {
 }
 function updateReadStatus() {
     var runCount = Object.keys(readStatus.parsedActivities).length;
+    readStatus.count = runCount;
     $("#readStatus").html("Read " + readStatus.output + " of " + readStatus.input + " files. Found " + runCount + " runs.");
 };
 
@@ -221,6 +224,7 @@ function clearStatus(){
     $("#located_runs").html('');
     $("#readStatus").html('');
     $("#upload").prop('disabled', true);
+    $("#progress").prop("hidden", true);
 }
 function clearStatusEvent(event){
     clearStatus();
@@ -238,6 +242,12 @@ function uploadActivities(){
                 var panel = $("#" + labelFromTime(id));
                 panel.removeClass('panel-default');
                 panel.addClass('panel-success');
+                readStatus.uploaded++;
+                var percentDone = Math.min(100, Math.floor(100 * (readStatus.uploaded / readStatus.count)));
+                $("#progress").css('width', percentDone + '%').attr("aria-valuenow", percentDone);
+                $("#progress").html(percentDone + '%');
+                $("#progress").prop("hidden", false);
+
             }
         }).fail(function(XMLHttpRequest, textStatus, errorThrown){
             var id = JSON.parse(this.data).time;
