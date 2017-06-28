@@ -37,17 +37,19 @@ class RunSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         points = validated_data['points']
-        return Activity.objects.create(
-            name=validated_data['name'],
+        return Activity.objects.update_or_create(
             time=validated_data['time'],
-            distance=max(
-                a['distance'] for a in points
-            ),
-            duration=self.duration(points),
-            elevation=self.elevation_gain(points),
-            data_points=len(points),
-            stream=self.stream(points),
-        )
+            defaults={
+                'name': validated_data['name'],
+                'distance': max(
+                    a['distance'] for a in points
+                ),
+                'duration': self.duration(points),
+                'elevation': self.elevation_gain(points),
+                'data_points': len(points),
+                'stream': self.stream(points),
+            }
+        )[0]
 
     def to_representation(self, item):
         return BareActivitySerializer().to_representation(item)
