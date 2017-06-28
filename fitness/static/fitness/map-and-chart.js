@@ -1,98 +1,3 @@
-/*geoJsonData = [{
-    "type": "Feature",
-    "properties": {
-        "id": 0,
-        "elevation": 50,
-        "pace": 25,
-        "distance": 1,
-    },
-    "geometry": {
-        "type": "LineString",
-        "coordinates": [
-            [11.836395263671875, 47.75317468890147], // longitude, latitude.
-            [11.865234375, 47.73193447949174]
-        ]
-    }
-}, {
-    "type": "Feature",
-    "properties": {
-        "id": 1,
-        "elevation": 750,
-        "pace": 10,
-        "distance": 2,
-    },
-    "geometry": {
-        "type": "LineString",
-        "coordinates": [
-            [11.865234375, 47.73193447949174],
-            [11.881027221679688, 47.700520033704954]
-        ]
-    }
-}, {
-    "type": "Feature",
-    "properties": {
-        "id": 2,
-        "elevation": 1700,
-        "pace": 20,
-        "distance": 3,
-    },
-    "geometry": {
-        "type": "LineString",
-        "coordinates": [
-            [11.881027221679688, 47.700520033704954],
-            [11.923599243164062, 47.706527200903395]
-        ]
-    }
-}, {
-    "type": "Feature",
-    "properties": {
-        "id": 3,
-        "elevation": 3000,
-        "pace": 15,
-        "distance": 4,
-    },
-    "geometry": {
-        "type": "LineString",
-        "coordinates": [
-            [11.923599243164062, 47.706527200903395],
-            [11.881027221679688, 47.700520033704954],
-        ]
-    }
-}, {
-    "type": "Feature",
-    "properties": {
-        "id": "progress",
-    },
-    "geometry": {
-        "type": "Point",
-        "coordinates": [
-            11.836395263671875, 47.75317468890147 // longitude, latitude.
-        ]
-    }
-}, {
-    "type": "Feature",
-    "properties": {
-        "id": "start",
-    },
-    "geometry": {
-        "type": "Point",
-        "coordinates": [
-            11.836395263671875, 47.75317468890147 // longitude, latitude.
-        ]
-    }
-}, {
-    "type": "Feature",
-    "properties": {
-        "id": "stop",
-    },
-    "geometry": {
-        "type": "Point",
-        "coordinates": [
-            11.923599243164062, 47.706527200903395 // longitude, latitude.
-        ]
-    }
-}];*/
-
 function geoJsonToChart(field) {
     var output_data = [];
     for (var i = 0; i < geoJsonData.length; i++) {
@@ -111,7 +16,6 @@ function geoJsonToChart(field) {
 function geoJsonPointById(id) {
     for (var i = 0; i < geoJsonData.length; i++) {
         var item = geoJsonData[i];
-        console.log(id, item, item.properties.id);
         if (item.properties.id == id) {
             return item
         }
@@ -120,6 +24,10 @@ function geoJsonPointById(id) {
 
 function geoJsonFields() {
     var fields = [];
+    desired_order = [
+        'speed', 'heart_rate', 'cadence', 'elevation',
+    ];
+
     for (var i = 0; i < geoJsonData.length; i++) {
         var item = geoJsonData[i];
         if (item.geometry.type = "LineString") {
@@ -129,7 +37,18 @@ function geoJsonFields() {
                 }
                 fields.push(key);
             }
-            return fields;
+            output = [];
+            for (var j = 0; j < desired_order.length; j++) {
+                if ($.inArray(desired_order[j], fields) > -1) {
+                    output.push(desired_order[j]);
+                }
+            }
+            for (var j = 0; j < fields.length; j++) {
+                if ($.inArray(fields[j], output) == -1) {
+                    output.push(fields[j]);
+                }
+            }
+            return output;
         }
     }
 }
@@ -233,17 +152,14 @@ function toTitleCase(str) {
 
 function routeLines() {
     var fields = geoJsonFields();
-    console.log(fields);
     var object_data = {};
     for (var i = 0; i < fields.length; i++) {
         key = fields[i];
-        console.log('From Route', key);
         object_data[toTitleCase(key)] = L.geoJson(geoJsonData, {
             style: createLine,
             pointToLayer: pointToLayer
         });
     }
-    console.log(object_data);
     return object_data;
 }
 
@@ -354,23 +270,19 @@ function chartDataSets() {
 }
 
 function constructView(activityURL){
-    console.log('Loading activity map from ', activityURL);
     $.getJSON(activityURL + "?format=json",
     function(data) {
         geoJsonData = data.geo_json;
-        console.log(geoJsonData);
         generateMap();
         var ctx = document.getElementById("myChart");
         chartData = chartDataSets();
         var maxX = 0;
         var distances = geoJsonToChart('distance');
-        console.log
         for (var i=0; i < distances.length; i++){
             if (distances[i].x > maxX) {
                 maxX = distances[i].x;
             }
         }
-        console.log(chartData, maxX);
         var scatterChart = new Chart(ctx, {
             type: 'scatter',
             data: {
