@@ -177,6 +177,7 @@ class Activity(models.Model):
                         'elevation': point.get('altitude'),
                         'speed': point.get('speed'),
                         'distance': point.get('distance'),
+                        'cadence': point.get('cadence'),
                     },
                     'geometry': {
                         'type': 'LineString',
