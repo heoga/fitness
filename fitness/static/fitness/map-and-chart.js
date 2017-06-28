@@ -129,7 +129,11 @@ function markerColor(feature) {
         case 'stop':
             return "red";
         case 'progress':
-            return "blue";
+            if (darkBackground){
+                return "white";
+            } else {
+                return "blue";
+            }
     }
 }
 
