@@ -85,19 +85,18 @@ function readTCXText(event) {
                     parsedPoint.speed = null;
                 }
                 if (heartRate) {
-                    parsedPoint.heart_rate = parseFloat(heartRate.innerHTML);
+                    parsedPoint.heart_rate = parseFloat(heartRate.getElementsByTagName("Value")[0].innerHTML);
                 } else {
                     parsedPoint.heart_rate = null;
                 }
                 currentActivity.points.push(parsedPoint);
             });
             if (Object.keys(currentActivity.points).length > 0) {
-                readStatus.parsedActivities[currentActivity.id] = currentActivity;
+                readStatus.parsedActivities[currentActivity.time] = currentActivity;
             }
         }
     });
     readStatus.output += 1;
-    console.log(readStatus);
     updateReadStatus();
     if (readStatus.input == readStatus.output) {
         readComplete();
@@ -177,28 +176,32 @@ function readGPXText(event) {
                 }
             });
             if (Object.keys(currentActivity.points).length > 0) {
-                readStatus.parsedActivities[currentActivity.id] = currentActivity;
+                readStatus.parsedActivities[currentActivity.time] = currentActivity;
             }
         }
     });
     readStatus.output += 1;
-    console.log(readStatus);
     updateReadStatus();
     if (readStatus.input == readStatus.output) {
         readComplete();
     }
 }
 function updateReadStatus() {
-    console.log('Updating');
     var runCount = Object.keys(readStatus.parsedActivities).length;
     $("#readStatus").html("Read " + readStatus.output + " of " + readStatus.input + " files. Found " + runCount + " runs.");
 };
+
+function labelFromTime(time) {
+    var response = time.replace(/:/g, '').replace(/-/g, '').replace(/\./g, '');
+    return response;
+}
+
 function readComplete() {
     var layers = [];
     $.each(readStatus.parsedActivities, function(index, activity) {
         var display_date = new Date(activity.time);
         layers.push(
-            '<div class="panel panel-default" id="' + activity.time + '">' +
+            '<div class="panel panel-default" id="' + labelFromTime(activity.time) + '">' +
             '  <div class="panel-heading">' +
             '    <h3 class="panel-title">' + display_date + '</h3>' +
             '  </div>' +
@@ -220,14 +223,10 @@ function clearStatus(){
     $("#upload").prop('disabled', true);
 }
 function clearStatusEvent(event){
-    console.log('Clearing');
     clearStatus();
 }
 function uploadActivities(){
     $.each(readStatus.parsedActivities, function(index, activity) {
-        var panel = $("#" + activity.time);
-        console.log('Posting', activity);
-        var csrftoken = Cookies.get('csrftoken');
         $.ajax({
             url:"/fitness/api/activities/",
             type:"POST",
@@ -235,12 +234,16 @@ function uploadActivities(){
             contentType:"application/json; charset=utf-8",
             dataType:"json",
             success: function(){
-                console.log('It worked!');
+                var id = JSON.parse(this.data).time;
+                var panel = $("#" + labelFromTime(id));
+                panel.removeClass('panel-default');
+                panel.addClass('panel-success');
             }
         }).fail(function(XMLHttpRequest, textStatus, errorThrown){
-            alert("error");
-            console.log(XMLHttpRequest, textStatus, errorThrown);
+            var id = JSON.parse(this.data).time;
+            var panel = $("#" + labelFromTime(id));
+            panel.removeClass('panel-default');
+            panel.addClass('panel-danger');
         });
-        console.log('Posted');
     });
 }
