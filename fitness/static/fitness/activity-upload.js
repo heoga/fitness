@@ -50,9 +50,9 @@ function readTCXText(event) {
     $.each(activities, function(index, activity) {
         if (activity.attributes.Sport.nodeValue == "Running") {
             var currentActivity = {}
-            currentActivity.id = activity.getElementsByTagName("Id")[0].innerHTML;
+            currentActivity.time = activity.getElementsByTagName("Id")[0].innerHTML;
             currentActivity.name = activity.getElementsByTagName("Notes")[0].innerHTML;
-            currentActivity.points = {};
+            currentActivity.points = [];
             $.each(activity.getElementsByTagName("Trackpoint"), function(index, trackpoint) {
                 var parsedPoint = {};
                 var time = trackpoint.getElementsByTagName("Time")[0];
@@ -89,7 +89,7 @@ function readTCXText(event) {
                 } else {
                     parsedPoint.heart_rate = null;
                 }
-                currentActivity.points[parsedPoint.time] = parsedPoint
+                currentActivity.points.push(parsedPoint);
             });
             if (Object.keys(currentActivity.points).length > 0) {
                 readStatus.parsedActivities[currentActivity.id] = currentActivity;
@@ -171,9 +171,9 @@ function readGPXText(event) {
                 } else {
                     parsedPoint.heart_rate = null;
                 }
-                currentActivity.points[parsedPoint.time] = parsedPoint
-                if (!currentActivity.id) {
-                    currentActivity.id = parsedPoint.time;
+                currentActivity.points.push(parsedPoint);
+                if (!currentActivity.time) {
+                    currentActivity.time = parsedPoint.time;
                 }
             });
             if (Object.keys(currentActivity.points).length > 0) {
@@ -196,9 +196,9 @@ function updateReadStatus() {
 function readComplete() {
     var layers = [];
     $.each(readStatus.parsedActivities, function(index, activity) {
-        var display_date = new Date(activity.id);
+        var display_date = new Date(activity.time);
         layers.push(
-            '<div class="panel panel-default" id="' + activity.id + '">' +
+            '<div class="panel panel-default" id="' + activity.time + '">' +
             '  <div class="panel-heading">' +
             '    <h3 class="panel-title">' + display_date + '</h3>' +
             '  </div>' +
@@ -224,5 +224,23 @@ function clearStatusEvent(event){
     clearStatus();
 }
 function uploadActivities(){
-    console.log('Uploading');
+    $.each(readStatus.parsedActivities, function(index, activity) {
+        var panel = $("#" + activity.time);
+        console.log('Posting', activity);
+        var csrftoken = Cookies.get('csrftoken');
+        $.ajax({
+            url:"/fitness/api/activities/",
+            type:"POST",
+            data: JSON.stringify(activity),
+            contentType:"application/json; charset=utf-8",
+            dataType:"json",
+            success: function(){
+                console.log('It worked!');
+            }
+        }).fail(function(XMLHttpRequest, textStatus, errorThrown){
+            alert("error");
+            console.log(XMLHttpRequest, textStatus, errorThrown);
+        });
+        console.log('Posted');
+    });
 }

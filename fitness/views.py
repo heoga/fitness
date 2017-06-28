@@ -17,7 +17,7 @@ from fitness.forms.profile import ProfileForm
 from fitness.forms.user import UserForm
 
 from fitness.models import Activity
-from fitness.serializers import ActivitySerializer
+from fitness.serializers import ActivitySerializer, RunSerializer
 
 
 class ActivityList(ListView):
@@ -42,6 +42,12 @@ class ActivityViewSet(viewsets.ModelViewSet):
     """
     queryset = Activity.objects.all()
     serializer_class = ActivitySerializer
+
+    def get_serializer_class(self):
+        serializer_class = self.serializer_class
+        if self.request.method == 'POST':
+            serializer_class = RunSerializer
+        return serializer_class
 
 
 class DataPoint(object):
