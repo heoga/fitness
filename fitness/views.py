@@ -8,6 +8,7 @@ from django.views.generic import ListView, DetailView
 from rest_framework import viewsets
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.urlresolvers import reverse_lazy
+from django.contrib.auth.decorators import login_required
 
 from django.shortcuts import render
 from django.views import View
@@ -20,25 +21,34 @@ from fitness.models import Activity
 from fitness.serializers import ActivitySerializer, RunSerializer
 
 
-class ActivityList(ListView):
+class ActivityList(LoginRequiredMixin, ListView):
     template_name = 'fitness/activity_list.html'
     model = Activity
     paginate_by = 30
 
+    def get_queryset(self):
+        return Activity.objects.filter(owner=self.request.user)
 
-class ActivityDetail(DetailView):
+
+class ActivityDetail(LoginRequiredMixin, DetailView):
     template_name = 'fitness/activity_detail.html'
     model = Activity
 
+    def get_queryset(self):
+        return Activity.objects.filter(owner=self.request.user)
 
-class ActivitySVG(DetailView):
+
+class ActivitySVG(LoginRequiredMixin, DetailView):
     template_name = 'fitness/activity.svg'
     model = Activity
+
+    def get_queryset(self):
+        return Activity.objects.filter(owner=self.request.user)
 
 
 class ActivityViewSet(viewsets.ModelViewSet):
     """
-    API endpoint that allows users to be viewed or edited.
+    API endpoint that allows activities to be viewed or edited.
     """
     queryset = Activity.objects.all()
     serializer_class = ActivitySerializer
@@ -68,6 +78,7 @@ class DataPoint(object):
         self.form = self.fitness - self.fatigue
 
 
+@login_required
 def render_trimp(request):
     activities = [a for a in Activity.objects.all() if a.points_with_heart_rate()]
     min_heart = 50
@@ -128,6 +139,7 @@ class ControlPanelView(LoginRequiredMixin, View):
         return self.get(request, *args, **kwargs)
 
 
-class UploadView(TemplateView):
+class UploadView(LoginRequiredMixin, TemplateView):
     template_name = 'fitness/activity_upload.html'
+
 

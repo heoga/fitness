@@ -27,7 +27,7 @@ class Profile(models.Model):
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
-        Profile.objects.create(user=instance)
+        Profile.objects.create(user=instance, theme=Theme.objects.first())
 
 
 @receiver(post_save, sender=User)
@@ -36,6 +36,7 @@ def save_user_profile(sender, instance, **kwargs):
 
 
 class Activity(models.Model):
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=128)
     time = models.DateTimeField()
     distance = models.FloatField(null=True)

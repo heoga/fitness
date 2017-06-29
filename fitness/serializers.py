@@ -1,6 +1,13 @@
 from rest_framework import serializers
+from django.contrib.auth.models import User
 
 from fitness.models import Activity
+
+
+class UserSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = User
+        fields = ('url', 'username', 'email', 'is_staff', 'profile')
 
 
 class ActivitySerializer(serializers.HyperlinkedModelSerializer):
@@ -30,10 +37,21 @@ class RunSerializer(serializers.Serializer):
     time = serializers.DateTimeField()
     name = serializers.CharField(max_length=64)
     points = PointSerializer(many=True)
+    owner = UserSerializer(
+        read_only=True,
+        default=serializers.CreateOnlyDefault('Junk')
+    )
+
+    def validate_owner(self, value):
+        """
+        This will force the author when a new debt is created via the API.
+        """
+        return self.context['request'].user
 
     def create(self, validated_data):
         points = validated_data['points']
         return Activity.objects.update_or_create(
+            owner=validated_data['owner'],
             time=validated_data['time'],
             defaults={
                 'name': validated_data['name'],
