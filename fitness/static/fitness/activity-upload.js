@@ -110,28 +110,25 @@ function readGPXText(event) {
     var xml = parser.parseFromString(text, "text/xml")
     var activities = xml.getElementsByTagName("trk");
     $.each(activities, function(index, activity) {
-        trackType = activity.getElementsByTagName("type")[0]
-        if (!trackType){
-            return;
-        }
-        if (trackType.innerHTML == "running") {
+        var trackType = activity.getElementsByTagName("type")[0]
+        if (!trackType || trackType.innerHTML == "running") {
             var currentActivity = {}
             var previousLatitude = null;
             var previousLongitude = null;
             var previousTime = null;
             var previousDistance = 0;
             currentActivity.name = activity.getElementsByTagName("name")[0].innerHTML;
-            currentActivity.points = {};
+            currentActivity.points = [];
             $.each(activity.getElementsByTagName("trkpt"), function(index, trackpoint) {
                 var parsedPoint = {};
-                var time = trackpoint.getElementsByTagName("time")[0];
+                var time = trackpoint.getElementsByTagName("time")[0].innerHTML;
                 var altitude = trackpoint.getElementsByTagName("ele")[0];
                 var latitude = trackpoint.attributes.lat.nodeValue;
                 var longitude = trackpoint.attributes.lon.nodeValue;
                 var cadence = trackpoint.getElementsByTagName("ns3:cad")[0];
                 var heartRate = trackpoint.getElementsByTagName("ns3:hr")[0];
                 if (time && altitude && latitude && longitude) {
-                    parsedPoint.time = time.innerHTML;
+                    parsedPoint.time = time;
                     parsedPoint.altitude = parseFloat(altitude.innerHTML);
                     parsedPoint.latitude = parseFloat(latitude);
                     parsedPoint.longitude = parseFloat(longitude);
@@ -140,9 +137,11 @@ function readGPXText(event) {
                 }
                 // Calculate Distance.
                 if (previousLatitude && previousLongitude) {
-                    parsedPoint.distance = previousDistance + calculateDistance(previousLatitude, previousLongitude, latitude, longitude, 'm');
+                    var distanceIncrement = calculateDistance(previousLatitude, previousLongitude, latitude, longitude, 'm');
+                    parsedPoint.distance = previousDistance + distanceIncrement;
                 } else {
                     parsedPoint.distance = 0.0;
+                    var distanceIncrement = 0;
                 }
                 previousLatitude = latitude;
                 previousLongitude = longitude;
@@ -150,22 +149,17 @@ function readGPXText(event) {
                 // Calculate Speed.
                 newTime = new Date(time);
                 if (previousTime) {
-                    seconds = (newTime - previousTime) / 1000;
-                    speed = 0.0;
+                    var seconds = (newTime - previousTime) / 1000;
+                    parsedPoint.speed = distanceIncrement / seconds;
                 }
                 else {
-                    speed = 0.0;
+                    parsedPoint.speed = 0.0;
                 }
                 previousTime = new Date(time);
                 if (cadence) {
                     parsedPoint.cadence = parseFloat(cadence.innerHTML);
                 } else {
                     parsedPoint.cadence = null;
-                }
-                if (speed) {
-                    parsedPoint.speed = parseFloat(speed.innerHTML);
-                } else {
-                    parsedPoint.speed = null;
                 }
                 if (heartRate) {
                     parsedPoint.heart_rate = parseFloat(heartRate.innerHTML);
