@@ -3,7 +3,6 @@ import pygal
 import math
 from pygal.style import NeonStyle
 
-from django.http import HttpResponse
 from django.views.generic import ListView, DetailView
 from rest_framework import viewsets
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -101,10 +100,6 @@ def render_trimp(request):
     dateline.add('Fatigue', [(a.date, a.fatigue) for a in points], show_dots=False)
     dateline.add('Form', [(a.date, a.form) for a in points], show_dots=False)
     return dateline.render_django_response()
-
-
-def index(request):
-    return HttpResponse("Hello, world. You're at the polls index.")
 
 
 class ControlPanelView(LoginRequiredMixin, View):
