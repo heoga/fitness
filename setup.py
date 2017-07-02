@@ -60,7 +60,7 @@ def get_package_data(package):
     return {package: filepaths}
 
 
-version = "0.1.0"
+version = "0.1.1"
 
 setup(
     name='fitness',
@@ -77,6 +77,7 @@ setup(
         'django-bootstrap3',
         'djangorestframework',
         'pygal',
+        'python-dateutil',
     ],
     setup_requires=['pytest-runner>=2.9'],
     tests_require=[
