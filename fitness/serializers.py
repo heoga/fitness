@@ -50,7 +50,7 @@ class RunSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         points = validated_data['points']
-        return Activity.objects.update_or_create(
+        new_activity = Activity.objects.update_or_create(
             owner=validated_data['owner'],
             time=validated_data['time'],
             defaults={
@@ -64,6 +64,9 @@ class RunSerializer(serializers.Serializer):
                 'stream': self.stream(points),
             }
         )[0]
+        new_activity.trimp = new_activity.calculate_trimp()
+        new_activity.save()
+        return new_activity
 
     def to_representation(self, item):
         return BareActivitySerializer().to_representation(item)

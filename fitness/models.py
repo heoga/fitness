@@ -22,6 +22,23 @@ class Theme(models.Model):
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     theme = models.ForeignKey(Theme)
+    minimum_heart_rate = models.IntegerField(default=60)
+    maximum_heart_rate = models.IntegerField(default=190)
+
+    MALE = 'M'
+    FEMALE = 'F'
+    GENDER_CHOICES = (
+        (MALE, 'Male'),
+        (FEMALE, 'Female'),
+    )
+    gender = models.CharField(
+        max_length=1,
+        choices=GENDER_CHOICES,
+        default=MALE,
+    )
+
+    def heart_rate_reserve(self):
+        return self.maximum_heart_rate - self.minimum_heart_rate
 
 
 @receiver(post_save, sender=User)
@@ -42,6 +59,7 @@ class Activity(models.Model):
     distance = models.FloatField(null=True)
     duration = models.FloatField(null=True)
     elevation = models.FloatField(null=True)
+    trimp = models.IntegerField(null=True)
     data_points = models.IntegerField(null=True)
     stream = JSONField(encoder=DjangoJSONEncoder, null=True)
 
@@ -51,11 +69,12 @@ class Activity(models.Model):
     def points_with_heart_rate(self):
         return [a for a in self.point_stream() if a.get('heart_rate')]
 
-    def trimp(self, minimum, maximum, male=True):
+    def calculate_trimp(self):
         trimp = 0
         last_point = None
-        heart_range = maximum - minimum
-        exponent = 1.92 if male else 1.67
+        minimum = self.owner.profile.minimum_heart_rate
+        heart_range = self.owner.profile.heart_rate_reserve()
+        exponent = 1.92 if self.owner.profile.gender == 'M' else 1.67
         points = self.points_with_heart_rate()
         if not points:
             return None
@@ -72,6 +91,8 @@ class Activity(models.Model):
 
     @staticmethod
     def decompress(point):
+        if isinstance(point['time'], datetime.datetime):
+            return point
         expanded = point.copy()
         expanded['time'] = dateutil.parser.parse(point['time'])
         return expanded

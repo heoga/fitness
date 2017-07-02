@@ -80,15 +80,13 @@ class DataPoint(object):
 @login_required
 def render_trimp(request):
     activities = [a for a in Activity.objects.all() if a.points_with_heart_rate()]
-    min_heart = 50
-    max_heart = 203
     start = min(a.time.date() for a in activities)
     end = max(a.time.date() for a in activities)
     calendar = {k: DataPoint(k) for k in [
         (start + datetime.timedelta(days=i)) for i in range(0, (end - start).days + 1)
     ]}
     for activity in activities:
-        calendar[activity.time.date()].trimp += activity.trimp(min_heart, max_heart)
+        calendar[activity.time.date()].trimp += activity.trimp
     points = sorted(calendar.values(), key=lambda h: h.date)
     for index, point in enumerate(points):
         if index != 0:
@@ -113,7 +111,10 @@ class ControlPanelView(LoginRequiredMixin, View):
             'email': self.request.user.email,
         })
         profile_form = ProfileForm(initial={
-            'theme': self.request.user.profile.theme
+            'theme': self.request.user.profile.theme,
+            'gender': self.request.user.profile.gender,
+            'minimum_heart_rate': self.request.user.profile.minimum_heart_rate,
+            'maximum_heart_rate': self.request.user.profile.maximum_heart_rate
         })
         return render(request, self.template_name, {
             'user_form': user_form,

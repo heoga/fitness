@@ -6,4 +6,4 @@ class ProfileForm(ModelForm):
 
     class Meta:
         model = Profile
-        fields = ['theme']
+        fields = ['theme', 'gender', 'minimum_heart_rate', 'maximum_heart_rate']

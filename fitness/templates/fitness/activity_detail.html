@@ -43,7 +43,8 @@ $( document ).ready(function() {
             <tr><td>Distance (km)</td><td>{{ object.display_distance | floatformat}} km</td></tr>
             <tr><td>Duration</td><td>{{ object.duration_as_string }}</td></tr>
             <tr><td>Average Pace</td><td>{{ object.average_pace_as_string }} min/km</td></tr>
-            <tr><td>Elevation Gain</td><td>{{ object.elevation }} m</td></tr>
+            <tr><td>Elevation Gain</td><td>{{ object.elevation | floatformat }} m</td></tr>
+            <tr><td>TRIMP Contribution</td><td>{{ object.trimp | floatformat}}</td></tr>
             <tr><td>Data Points</td><td>{{ object.data_points }}</td></tr>
         </tbody>
     </table>

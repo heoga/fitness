@@ -60,7 +60,7 @@ def get_package_data(package):
     return {package: filepaths}
 
 
-version = "0.1.3"
+version = "0.1.4"
 
 setup(
     name='fitness',
