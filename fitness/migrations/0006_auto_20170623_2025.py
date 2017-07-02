@@ -29,6 +29,10 @@ def create_themes(apps, unused):
         Theme.objects.update_or_create(name=name, dark=dark)
 
 
+def reverse(apps, unused):
+    pass
+
+
 def create_profiles_for_existing_users(apps, unused):
     User = apps.get_model('auth', 'User')
     Profile = apps.get_model('fitness', 'Profile')
@@ -47,6 +51,6 @@ class Migration(migrations.Migration):
         ('fitness', '0001_initial'),
     ]
     operations = [
-        migrations.RunPython(create_themes),
-        migrations.RunPython(create_profiles_for_existing_users),
+        migrations.RunPython(create_themes, reverse),
+        migrations.RunPython(create_profiles_for_existing_users, reverse),
     ]
