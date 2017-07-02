@@ -51,6 +51,6 @@ class Migration(migrations.Migration):
         ('fitness', '0001_initial'),
     ]
     operations = [
-        migrations.RunPython(create_themes, reverse),
-        migrations.RunPython(create_profiles_for_existing_users, reverse),
+        migrations.RunPython(create_themes, reverse_code=reverse),
+        migrations.RunPython(create_profiles_for_existing_users, reverse_code=reverse),
     ]
