@@ -16,10 +16,11 @@ class ActivitySerializer(serializers.HyperlinkedModelSerializer):
         fields = ('url', 'name', 'time', 'geo_json', 'svg_points')
 
 
-class BareActivitySerializer(serializers.Serializer):
+class BareActivitySerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Activity
-        fields = ('url', 'name', 'time')
+        fields = ('name', 'time', 'id', 'trimp')
+        read_only_fields = ('name', 'time', 'id', 'trimp')
 
 
 class PointSerializer(serializers.Serializer):

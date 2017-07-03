@@ -3,11 +3,66 @@
 
 {% block title %}Control Panel{% endblock %}
 
+{% block scripts %}
+function recalculate_trimp(){
+    $.getJSON("{% url 'bare_activity-list' %}?format=json",
+    function(data) {
+        var total = data.length;
+        var done = 0;
+        $.each(data, function(index, activity) {
+            $.get("/fitness/recalculate/" + activity.id + "/", function( data ) {
+                done++;
+                var progress = $('#calculation_progress');
+                if (done == total) {
+                    progress.hide()
+                } else {
+                    progress.html(done + '/' + total).show();
+                }
+            });
+        });
+    });
+}
+
+{% endblock %}
 {% block content %}
 <form action="{% url 'control_panel' %}" method="post" class="form">
     {% csrf_token %}
-    {% bootstrap_form user_form %}
-    {% bootstrap_form profile_form %}
+    <div class="row">
+        <div class="col-md-6">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title">User Details</h3>
+                </div>
+                <div class="panel-body">
+                    {% bootstrap_form user_form %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Profile Details</h3>
+                </div>
+                <div class="panel-body">
+                    {% bootstrap_form profile_form %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Heart Rate Details</h3>
+                </div>
+                <div class="panel-body">
+                    {% bootstrap_form heart_form %}
+                    <button type="button" onclick="recalculate_trimp()" class="btn btn-primary">
+                        {% bootstrap_icon "refresh" %} Recalculate TRIMP
+                    </button>
+                    <div id="calculation_progress" hidden></div>
+                </div>
+            </div>
+        </div>
+    </div>
     {% buttons %}
         {% include "fitness/save.html" %}
     {% endbuttons %}

@@ -12,12 +12,13 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.views import View
 from django.views.generic import TemplateView
+from django.http import HttpResponse
 
-from fitness.forms.profile import ProfileForm
+from fitness.forms.profile import ProfileForm, HeartRateForm
 from fitness.forms.user import UserForm
 
 from fitness.models import Activity
-from fitness.serializers import ActivitySerializer, RunSerializer
+from fitness.serializers import ActivitySerializer, RunSerializer, BareActivitySerializer
 
 
 class ActivityList(LoginRequiredMixin, ListView):
@@ -49,14 +50,28 @@ class ActivityViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows activities to be viewed or edited.
     """
-    queryset = Activity.objects.all()
     serializer_class = ActivitySerializer
+    queryset = Activity.objects.all()
+
+    #def get_queryset(self):
+    #    return Activity.objects.filter(owner=self.request.user)
 
     def get_serializer_class(self):
         serializer_class = self.serializer_class
         if self.request.method == 'POST':
             serializer_class = RunSerializer
         return serializer_class
+
+
+class BareActivityViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows activities to be viewed or edited.
+    """
+    serializer_class = BareActivitySerializer
+    # queryset = Activity.objects.all()
+
+    def get_queryset(self):
+        return Activity.objects.filter(owner=self.request.user)
 
 
 class DataPoint(object):
@@ -113,12 +128,15 @@ class ControlPanelView(LoginRequiredMixin, View):
         profile_form = ProfileForm(initial={
             'theme': self.request.user.profile.theme,
             'gender': self.request.user.profile.gender,
+        })
+        heart_form = HeartRateForm(initial={
             'minimum_heart_rate': self.request.user.profile.minimum_heart_rate,
             'maximum_heart_rate': self.request.user.profile.maximum_heart_rate
         })
         return render(request, self.template_name, {
             'user_form': user_form,
             'profile_form': profile_form,
+            'heart_form': heart_form,
             'view': self,
         })
 
@@ -137,5 +155,15 @@ class ControlPanelView(LoginRequiredMixin, View):
 
 class UploadView(LoginRequiredMixin, TemplateView):
     template_name = 'fitness/activity_upload.html'
+
+
+class RecalculateTRIMPView(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        id = kwargs['pk']
+        activity = Activity.objects.filter(owner=request.user, id=id).first()
+        if activity:
+            activity.trimp = activity.calculate_trimp()
+            activity.save()
+        return HttpResponse('Done')
 
 

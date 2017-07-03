@@ -41,8 +41,18 @@ class Profile(models.Model):
         default=MALE,
     )
 
+    def __init__(self, *args, **kwargs):
+        super(Profile, self).__init__(*args, **kwargs)
+        self.__original_minimum = self.minimum_heart_rate
+        self.__original_maximum = self.maximum_heart_rate
+
     def heart_rate_reserve(self):
         return self.maximum_heart_rate - self.minimum_heart_rate
+
+    def save(self, *args, **kwargs):
+        self.minimum_heart_rate = max(1, self.minimum_heart_rate)
+        self.maximum_heart_rate = max(self.maximum_heart_rate, self.minimum_heart_rate + 1)
+        super(Profile, self).save(*args, **kwargs)
 
 
 @receiver(post_save, sender=User)
