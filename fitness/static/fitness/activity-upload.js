@@ -53,7 +53,12 @@ function readTCXText(event) {
         if (activity.attributes.Sport.nodeValue == "Running") {
             var currentActivity = {}
             currentActivity.time = activity.getElementsByTagName("Id")[0].innerHTML;
-            currentActivity.name = activity.getElementsByTagName("Notes")[0].innerHTML;
+            var notes = activity.getElementsByTagName("Notes")[0];
+            if (notes) {
+                currentActivity.name = notes.innerHTML;
+            } else {
+                currentActivity.name = currentActivity.time;
+            }
             currentActivity.points = [];
             $.each(activity.getElementsByTagName("Trackpoint"), function(index, trackpoint) {
                 var parsedPoint = {};
