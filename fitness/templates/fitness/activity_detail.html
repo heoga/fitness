@@ -39,17 +39,21 @@ $( document ).ready(function() {
 
 {% block content %}
     <h1>{{ object.name }}</h1>
-    <table class="table table-striped table-hover ">
-        <tbody>
-            <tr><td>Start Time</td><td>{{ object.local_time }}</td></tr>
-            <tr><td>Distance (km)</td><td>{{ object.display_distance | floatformat}} km</td></tr>
-            <tr><td>Duration</td><td>{{ object.duration_as_string }}</td></tr>
-            <tr><td>Average Pace</td><td>{{ object.average_pace_as_string }} min/km</td></tr>
-            <tr><td>Elevation Gain</td><td>{{ object.elevation | floatformat }} m</td></tr>
-            <tr><td>TRIMP Contribution</td><td>{{ object.trimp | floatformat}}</td></tr>
-            <tr><td>Data Points</td><td>{{ object.data_points }}</td></tr>
-        </tbody>
-    </table>
-    <div id="map" style="width: 100%; height: 400px"></div>
+    <div class="col-md-6">
+        <table class="table table-striped table-hover ">
+            <tbody>
+                <tr><td>Start Time</td><td>{{ object.local_time }}</td></tr>
+                <tr><td>Distance (km)</td><td>{{ object.display_distance | floatformat}} km</td></tr>
+                <tr><td>Duration</td><td>{{ object.duration_as_string }}</td></tr>
+                <tr><td>Average Pace</td><td>{{ object.average_pace_as_string }} min/km</td></tr>
+                <tr><td>Elevation Gain</td><td>{{ object.elevation | floatformat }} m</td></tr>
+                <tr><td>TRIMP Contribution</td><td>{{ object.trimp | floatformat}}</td></tr>
+                <tr><td>Data Points</td><td>{{ object.data_points }}</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="col-md-6">
+        <div id="map" style="width: 100%; height: 400px"></div>
+    </div>
     <canvas id="myChart" style="width: 100%; height: 400px"></canvas>
 {% endblock %}
