@@ -79,7 +79,7 @@ class DataPoint(object):
 
 @login_required
 def render_trimp(request):
-    activities = [a for a in Activity.objects.all() if a.points_with_heart_rate()]
+    activities = [a for a in Activity.objects.filter(owner=request.user) if a.points_with_heart_rate()]
     start = min(a.time.date() for a in activities)
     end = max(a.time.date() for a in activities)
     calendar = {k: DataPoint(k) for k in [
