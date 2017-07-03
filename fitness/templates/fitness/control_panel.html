@@ -1,5 +1,8 @@
 {% extends "fitness/base.html" %}
 {% load bootstrap3 %}
+
+{% block title %}Control Panel{% endblock %}
+
 {% block content %}
 <form action="{% url 'control_panel' %}" method="post" class="form">
     {% csrf_token %}

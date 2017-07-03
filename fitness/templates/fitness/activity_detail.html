@@ -35,6 +35,8 @@ $( document ).ready(function() {
 </script>
 {% endblock %}
 
+{% block title %}{{object.name}}{% endblock %}
+
 {% block content %}
     <h1>{{ object.name }}</h1>
     <table class="table table-striped table-hover ">

@@ -2,6 +2,8 @@
 {% load tz %}
 {% load bootstrap3 %}
 
+{% block title %}Activity List{% endblock %}
+
 {% block content %}
     <h2>Activities</h2>
     {% bootstrap_pagination page_obj extra=request.GET.urlencode %}
