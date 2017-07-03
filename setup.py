@@ -78,6 +78,7 @@ setup(
         'djangorestframework',
         'pygal',
         'python-dateutil',
+        'timezonefinder',
     ],
     setup_requires=['pytest-runner>=2.9'],
     tests_require=[

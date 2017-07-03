@@ -8,8 +8,12 @@ from django.dispatch import receiver
 from django.contrib.postgres.fields import JSONField
 from django.core.serializers.json import DjangoJSONEncoder
 
+from timezonefinder import TimezoneFinder
+from pytz import timezone
 import dateutil.parser
 
+
+TIMEZONE_FINDER = TimezoneFinder()
 
 class Theme(models.Model):
     name = models.CharField(max_length=128)
@@ -65,6 +69,13 @@ class Activity(models.Model):
 
     class Meta:
         ordering = ['-time']
+
+    def local_time(self):
+        for first_point in self.stream.values():
+            timezone_name = TIMEZONE_FINDER.timezone_at(lng=first_point['longitude'], lat=first_point['latitude'])
+            local_zone = timezone(timezone_name)
+            return local_zone.normalize(self.time.astimezone(local_zone)).strftime('%d %B %Y at %H:%M')
+
 
     def points_with_heart_rate(self):
         return [a for a in self.point_stream() if a.get('heart_rate')]
