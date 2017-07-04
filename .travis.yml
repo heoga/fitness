@@ -1,6 +1,8 @@
 language: python
 python:
     - "3.6"
+services:
+  - postgresql
 sudo: false
 env:
     - DJANGO=1.11
@@ -9,6 +11,8 @@ matrix:
     fast_finish: true
     allow_failures:
       - env: DJANGO=master
+before_script:
+  - psql -c 'create database travis_ci_test;' -U postgres
 install:
     - pip install tox tox-travis
 script:
