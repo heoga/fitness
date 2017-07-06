@@ -20,6 +20,7 @@
     darkBackground={% if  view.request.user.profile.theme.dark %}true{% else %}false{% endif %};
     console.log('Background', darkBackground);
 </script>
+<script src="{% static 'fitness/shadeRGB.js' %}"></script>
 <script src="{% static 'fitness/map-and-chart.js' %}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"></script>
 <style>

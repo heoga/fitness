@@ -5,6 +5,7 @@
 {% block title %}Training Impulse{% endblock %}
 {% block header %}
 <script src="{% static 'fitness/get-style.js' %}"></script>
+<script src="{% static 'fitness/shadeRGB.js' %}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"></script>
 <script src="https://cdn.rawgit.com/chartjs/chartjs-plugin-annotation/master/chartjs-plugin-annotation.js"></script>
@@ -15,6 +16,9 @@ fitnessColour = getStyleRuleValue('background-color', '.btn-success');
 fatigueColour = getStyleRuleValue('background-color', '.btn-primary');
 formColour = getStyleRuleValue('background-color', '.btn-warning');
 annotationColour = getStyleRuleValue('background-color', '.bg-warning');
+
+formBackgroundColour = shadeRGBColor(formColour, 0.5);
+console.log(formColour, formBackgroundColour);
 
 function getTrimp(){
     $.getJSON("{% url 'trimp-list' %}?format=json",
@@ -50,7 +54,7 @@ function getTrimp(){
                     data: formData,
                     borderColor: formColour,
                     pointRadius: 0,
-                    backgroundColor: 'rgb(255,255,0,0.1)'
+                    backgroundColor: formBackgroundColour
                 }],
             },
             options: {
