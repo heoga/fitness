@@ -20,7 +20,7 @@ from fitness.forms.profile import ProfileForm, HeartRateForm
 from fitness.forms.user import UserForm
 
 from fitness.models import Activity
-from fitness.serializers import ActivityDetailSerializer, ActivityListSerializer
+from fitness.serializers import ActivityDetailSerializer, ActivityListSerializer, TrimpSerializer
 
 
 class ActivityList(LoginRequiredMixin, ListView):
@@ -63,39 +63,20 @@ class ActivityViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
 
-class DataPoint(object):
-    def __init__(self, date):
-        self.date = date
-        self.trimp = 0
-        self.fitness = 0
-        self.fatigue = 0
-        self.form = 0
+class TrimpViewSet(viewsets.ViewSet):
+    queryset = Activity.objects.all()
 
-    def increment_fitness(self, last_point):
-        self.fitness = (
-            last_point.fitness + (self.trimp - last_point.fitness) * (1.0 - math.exp(-1.0 / 42.0))
+    def list(self, request):
+        serializer = TrimpSerializer(
+            Activity.trimp_history(self.request.user),
+            many=True, context={'request': request}
         )
-        self.fatigue = (
-            last_point.fatigue + (self.trimp - last_point.fatigue) * (1.0 - math.exp(-1.0 / 7.0))
-        )
-        self.form = self.fitness - self.fatigue
+        return Response(serializer.data)
 
 
 @login_required
 def render_trimp(request):
-    activities = [a for a in Activity.objects.filter(owner=request.user) if a.points_with_heart_rate()]
-    start = min(a.time.date() for a in activities)
-    end = max(a.time.date() for a in activities)
-    calendar = {k: DataPoint(k) for k in [
-        (start + datetime.timedelta(days=i)) for i in range(0, (end - start).days + 1)
-    ]}
-    for activity in activities:
-        calendar[activity.time.date()].trimp += activity.trimp
-    points = sorted(calendar.values(), key=lambda h: h.date)
-    for index, point in enumerate(points):
-        if index != 0:
-            point.increment_fitness(last_point)
-        last_point = point
+    points = Activity.trimp_history(request.user)
     dateline = pygal.DateLine(x_label_rotation=35, style=NeonStyle, legend_at_bottom=True, width=1024)
     dateline.title = 'Fitness over time'
     dateline.add('Fitness', [(a.date, a.fitness) for a in points], dots_size=1)
@@ -144,6 +125,10 @@ class ControlPanelView(LoginRequiredMixin, View):
 
 class UploadView(LoginRequiredMixin, TemplateView):
     template_name = 'fitness/activity_upload.html'
+
+
+class TrimpView(LoginRequiredMixin, TemplateView):
+    template_name = 'fitness/trimp.html'
 
 
 class RecalculateTRIMPView(LoginRequiredMixin, View):

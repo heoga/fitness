@@ -1,0 +1,113 @@
+{% extends "fitness/base.html" %}
+{% load static %}
+{% load bootstrap3 %}
+
+{% block title %}Training Impulse{% endblock %}
+{% block header %}
+<script src="{% static 'fitness/get-style.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"></script>
+<script src="https://cdn.rawgit.com/chartjs/chartjs-plugin-annotation/master/chartjs-plugin-annotation.js"></script>
+{% endblock %}
+{% block scripts %}
+darkBackground={% if  view.request.user.profile.theme.dark %}true{% else %}false{% endif %};
+fitnessColour = getStyleRuleValue('background-color', '.btn-success');
+fatigueColour = getStyleRuleValue('background-color', '.btn-primary');
+formColour = getStyleRuleValue('background-color', '.btn-warning');
+annotationColour = getStyleRuleValue('background-color', '.bg-warning');
+
+function getTrimp(){
+    $.getJSON("{% url 'trimp-list' %}?format=json",
+    function(data) {
+        var trimpData = data;
+        fitnessData = [];
+        fatigueData = [];
+        formData = [];
+        for (var i=0; i < trimpData.length; i++){
+            fitnessData.push({x: new Date(trimpData[i].date), y: trimpData[i].fitness});
+            fatigueData.push({x: new Date(trimpData[i].date), y: trimpData[i].fatigue});
+            formData.push({x: new Date(trimpData[i].date), y: trimpData[i].form});
+        }
+        console.log(trimpData);
+        var ctx = document.getElementById("myChart").getContext("2d");
+        window.myLine = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: 'Fitness',
+                    data: fitnessData,
+                    fill: false,
+                    borderColor: fitnessColour,
+                    pointRadius: 0
+                },{
+                    label: 'Fatigue',
+                    data: fatigueData,
+                    fill: false,
+                    borderColor: fatigueColour,
+                    pointRadius: 0
+                },{
+                    label: 'Form',
+                    data: formData,
+                    borderColor: formColour,
+                    pointRadius: 0,
+                    backgroundColor: 'rgb(255,255,0,0.1)'
+                }],
+            },
+            options: {
+                annotation: {
+                    annotations: [{
+                        borderColor: annotationColour,
+                        borderDash: [10, 10],
+                        borderWidth: 1,
+                        mode: 'horizontal',
+                        type: 'line',
+                        value: 25,
+                        scaleID: 'y-axis-0'
+                    },{
+                        borderColor: annotationColour,
+                        borderDash: [10, 10],
+                        borderWidth: 1,
+                        mode: 'horizontal',
+                        type: 'line',
+                        value: 5,
+                        scaleID: 'y-axis-0'
+                    },{
+                        borderColor: annotationColour,
+                        borderDash: [10, 10],
+                        borderWidth: 1,
+                        mode: 'horizontal',
+                        type: 'line',
+                        value: -10,
+                        scaleID: 'y-axis-0'
+                    },{
+                        borderColor: annotationColour,
+                        borderDash: [10, 10],
+                        borderWidth: 1,
+                        mode: 'horizontal',
+                        type: 'line',
+                        value: -30,
+                        scaleID: 'y-axis-0'
+                    }]
+                },
+                scales: {
+                    xAxes: [{
+                        type: 'time',
+                    }]
+                },
+                tooltips: {
+                    enabled: true,
+                    mode: 'nearest'
+                }
+            }
+        });
+    });
+}
+window.onload = function() {
+    getTrimp();
+};
+{% endblock %}
+{% block content %}
+<div>
+    <canvas id="myChart"></canvas>
+</div>
+{% endblock %}

@@ -279,3 +279,38 @@ class Activity(models.Model):
             }
         })
         return data
+
+    @classmethod
+    def trimp_history(cls, user):
+        activities = cls.objects.filter(owner=user).filter(trimp__isnull=False)
+        start = activities.order_by('time').first().time.date()
+        end = activities.order_by('time').last().time.date()
+        calendar = {k: DataPoint(k) for k in [
+            (start + datetime.timedelta(days=i)) for i in range(0, (end - start).days + 1)
+        ]}
+        for activity in activities:
+            calendar[activity.time.date()].trimp += activity.trimp or 0
+        points = sorted(calendar.values(), key=lambda h: h.date)
+        for index, point in enumerate(points):
+            if index != 0:
+                point.increment_fitness(last_point)
+            last_point = point
+        return points
+
+
+class DataPoint(object):
+    def __init__(self, date):
+        self.date = date
+        self.trimp = 0
+        self.fitness = 0
+        self.fatigue = 0
+        self.form = 0
+
+    def increment_fitness(self, last_point):
+        self.fitness = (
+            last_point.fitness + (self.trimp - last_point.fitness) * (1.0 - math.exp(-1.0 / 42.0))
+        )
+        self.fatigue = (
+            last_point.fatigue + (self.trimp - last_point.fatigue) * (1.0 - math.exp(-1.0 / 7.0))
+        )
+        self.form = self.fitness - self.fatigue

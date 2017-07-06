@@ -10,6 +10,14 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('url', 'username', 'email', 'is_staff', 'profile')
 
 
+class TrimpSerializer(serializers.Serializer):
+    date = serializers.DateField()
+    trimp = serializers.FloatField()
+    fitness = serializers.FloatField()
+    fatigue = serializers.FloatField()
+    form = serializers.FloatField()
+
+
 class ActivityDetailSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Activity
