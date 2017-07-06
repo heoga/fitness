@@ -5,12 +5,12 @@
 
 {% block scripts %}
 function recalculate_trimp(){
-    $.getJSON("{% url 'bare_activity-list' %}?format=json",
+    $.getJSON("{% url 'activity-list' %}?format=json",
     function(data) {
         var total = data.length;
         var done = 0;
         $.each(data, function(index, activity) {
-            $.get("/fitness/recalculate/" + activity.id + "/", function( data ) {
+            $.get("../recalculate/" + activity.id + "/", function( data ) {
                 done++;
                 var progress = $('#calculation_progress');
                 if (done == total) {

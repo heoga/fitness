@@ -9,16 +9,18 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.urlresolvers import reverse_lazy
 from django.contrib.auth.decorators import login_required
 
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.views import View
 from django.views.generic import TemplateView
 from django.http import HttpResponse
+
+from rest_framework.response import Response
 
 from fitness.forms.profile import ProfileForm, HeartRateForm
 from fitness.forms.user import UserForm
 
 from fitness.models import Activity
-from fitness.serializers import ActivitySerializer, RunSerializer, BareActivitySerializer
+from fitness.serializers import ActivityDetailSerializer, ActivityListSerializer
 
 
 class ActivityList(LoginRequiredMixin, ListView):
@@ -46,32 +48,19 @@ class ActivitySVG(LoginRequiredMixin, DetailView):
         return Activity.objects.filter(owner=self.request.user)
 
 
-class ActivityViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows activities to be viewed or edited.
-    """
-    serializer_class = ActivitySerializer
+class ActivityViewSet(viewsets.ViewSet):
     queryset = Activity.objects.all()
 
-    #def get_queryset(self):
-    #    return Activity.objects.filter(owner=self.request.user)
+    def list(self, request):
+        query_set = self.queryset.filter(owner=self.request.user)
+        serializer = ActivityListSerializer(query_set, many=True, context={'request': request})
+        return Response(serializer.data)
 
-    def get_serializer_class(self):
-        serializer_class = self.serializer_class
-        if self.request.method == 'POST':
-            serializer_class = RunSerializer
-        return serializer_class
-
-
-class BareActivityViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows activities to be viewed or edited.
-    """
-    serializer_class = BareActivitySerializer
-    # queryset = Activity.objects.all()
-
-    def get_queryset(self):
-        return Activity.objects.filter(owner=self.request.user)
+    def retrieve(self, request, pk=None):
+        query_set = self.queryset.filter(owner=self.request.user)
+        activity = get_object_or_404(query_set, pk=pk)
+        serializer = ActivityDetailSerializer(activity, context={'request': request})
+        return Response(serializer.data)
 
 
 class DataPoint(object):

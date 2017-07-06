@@ -6,7 +6,6 @@ from . import views
 
 router = routers.DefaultRouter()
 router.register(r'activities', views.ActivityViewSet, base_name='activity')
-router.register(r'bare_activities', views.BareActivityViewSet, base_name='bare_activity')
 
 urlpatterns = [
     url(r'^control_panel/$', views.ControlPanelView.as_view(), name='control_panel'),

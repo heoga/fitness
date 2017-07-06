@@ -10,16 +10,16 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('url', 'username', 'email', 'is_staff', 'profile')
 
 
-class ActivitySerializer(serializers.HyperlinkedModelSerializer):
+class ActivityDetailSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Activity
         fields = ('url', 'name', 'time', 'geo_json', 'svg_points')
 
 
-class BareActivitySerializer(serializers.HyperlinkedModelSerializer):
+class ActivityListSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Activity
-        fields = ('name', 'time', 'id', 'trimp')
+        fields = ('url', 'name', 'time', 'id', 'trimp')
         read_only_fields = ('name', 'time', 'id', 'trimp')
 
 
