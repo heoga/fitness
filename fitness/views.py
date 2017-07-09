@@ -15,12 +15,14 @@ from django.views.generic import TemplateView
 from django.http import HttpResponse
 
 from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.settings import api_settings
 
 from fitness.forms.profile import ProfileForm, HeartRateForm
 from fitness.forms.user import UserForm
 
 from fitness.models import Activity
-from fitness.serializers import ActivityDetailSerializer, ActivityListSerializer, TrimpSerializer
+from fitness.serializers import ActivityDetailSerializer, ActivityListSerializer, TrimpSerializer, RunSerializer
 
 
 class ActivityList(LoginRequiredMixin, ListView):
@@ -48,7 +50,7 @@ class ActivitySVG(LoginRequiredMixin, DetailView):
         return Activity.objects.filter(owner=self.request.user)
 
 
-class ActivityViewSet(viewsets.ViewSet):
+class ActivityViewSet(viewsets.GenericViewSet):
     queryset = Activity.objects.all()
 
     def list(self, request):
@@ -61,6 +63,15 @@ class ActivityViewSet(viewsets.ViewSet):
         activity = get_object_or_404(query_set, pk=pk)
         serializer = ActivityDetailSerializer(activity, context={'request': request})
         return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        kwargs['context'] = self.get_serializer_context()
+        kwargs['data'] = request.data
+        serializer = RunSerializer(**kwargs)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        headers = {'Location': serializer.data[api_settings.URL_FIELD_NAME]}
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class TrimpViewSet(viewsets.ViewSet):

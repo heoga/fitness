@@ -78,7 +78,7 @@ class RunSerializer(serializers.Serializer):
         return new_activity
 
     def to_representation(self, item):
-        return BareActivitySerializer().to_representation(item)
+        return ActivityListSerializer(context=self.context).to_representation(item)
 
     @staticmethod
     def duration(points):
