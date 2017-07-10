@@ -1,6 +1,5 @@
-from rest_framework import serializers
 from django.contrib.auth.models import User
-
+from rest_framework import serializers
 from fitness.models import Activity
 
 
@@ -52,26 +51,13 @@ class RunSerializer(serializers.Serializer):
     )
 
     def validate_owner(self, value):
-        """
-        This will force the author when a new debt is created via the API.
-        """
         return self.context['request'].user
 
     def create(self, validated_data):
-        points = validated_data['points']
         new_activity = Activity.objects.update_or_create(
             owner=validated_data['owner'],
             time=validated_data['time'],
-            defaults={
-                'name': validated_data['name'],
-                'distance': max(
-                    a['distance'] for a in points
-                ),
-                'duration': self.duration(points),
-                'elevation': self.elevation_gain(points),
-                'data_points': len(points),
-                'stream': self.stream(points),
-            }
+            defaults=self.defaults(validated_data),
         )[0]
         new_activity.trimp = new_activity.calculate_trimp()
         new_activity.save()
@@ -79,6 +65,20 @@ class RunSerializer(serializers.Serializer):
 
     def to_representation(self, item):
         return ActivityListSerializer(context=self.context).to_representation(item)
+
+    @classmethod
+    def defaults(cls, validated_data):
+        points = validated_data['points']
+        return {
+            'name': validated_data['name'],
+            'distance': max(
+                a['distance'] for a in points
+            ),
+            'duration': cls.duration(points),
+            'elevation': cls.elevation_gain(points),
+            'data_points': len(points),
+            'stream': cls.stream(points),
+        }
 
     @staticmethod
     def duration(points):
@@ -104,9 +104,6 @@ class RunSerializer(serializers.Serializer):
 
     @staticmethod
     def stream(points):
-        ordered_points = sorted(
-            points, key=lambda h: h['time']
-        )
         return {
-            a['time'].isoformat(): a for a in ordered_points
+            a['time'].isoformat(): a for a in sorted(points, key=lambda h: h['time'])
         }
