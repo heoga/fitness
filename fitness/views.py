@@ -1,72 +1,44 @@
 from django.views.generic import ListView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.urlresolvers import reverse_lazy
 
 from django.shortcuts import render
 from django.views import View
 from django.views.generic import TemplateView
 from django.http import HttpResponse
 
-from rest_framework import viewsets
-from rest_framework.response import Response
-from rest_framework.mixins import RetrieveModelMixin, ListModelMixin, CreateModelMixin
-
 from . import forms
 from . import models
-from . import serializers
 
 
-class ActivityList(LoginRequiredMixin, ListView):
-    template_name = 'fitness/activity_list.html'
+class UserActivityMixin(LoginRequiredMixin):
     model = models.Activity
+
+    def get_queryset(self):
+        return models.Activity.objects.filter(owner=self.request.user)
+
+
+class ActivityList(UserActivityMixin, ListView):
+    template_name = 'fitness/activity_list.html'
     paginate_by = 30
 
-    def get_queryset(self):
-        return models.Activity.objects.filter(owner=self.request.user)
 
-
-class ActivityDetail(LoginRequiredMixin, DetailView):
+class ActivityDetail(UserActivityMixin, DetailView):
     template_name = 'fitness/activity_detail.html'
-    model = models.Activity
-
-    def get_queryset(self):
-        return models.Activity.objects.filter(owner=self.request.user)
 
 
-class ActivitySVG(LoginRequiredMixin, DetailView):
+class ActivitySVG(UserActivityMixin, DetailView):
     template_name = 'fitness/activity.svg'
-    model = models.Activity
-
-    def get_queryset(self):
-        return models.Activity.objects.filter(owner=self.request.user)
 
 
-class ActivityViewSet(
-    RetrieveModelMixin, ListModelMixin, CreateModelMixin, viewsets.GenericViewSet
-):
-    def get_queryset(self):
-        return models.Activity.objects.filter(owner=self.request.user)
-
-    def get_serializer_class(self):
-        return {
-            'retrieve': serializers.ActivityDetailSerializer,
-            'create': serializers.RunSerializer
-        }.get(self.action) or serializers.ActivityListSerializer
+class UploadView(LoginRequiredMixin, TemplateView):
+    template_name = 'fitness/activity_upload.html'
 
 
-class TrimpViewSet(viewsets.ViewSet):
-    queryset = models.Activity.objects.all()
-
-    def list(self, request):
-        serializer = serializers.TrimpSerializer(
-            models.Activity.trimp_history(self.request.user),
-            many=True, context={'request': request}
-        )
-        return Response(serializer.data)
+class TrimpView(LoginRequiredMixin, TemplateView):
+    template_name = 'fitness/trimp.html'
 
 
 class ControlPanelView(LoginRequiredMixin, View):
-    login_url = reverse_lazy('login')
     template_name = "fitness/control_panel.html"
 
     def get(self, request, *args, **kwargs):
@@ -94,7 +66,7 @@ class ControlPanelView(LoginRequiredMixin, View):
         user_form = forms.UserForm(request.POST)
         profile_form = forms.ProfileForm(request.POST)
         heart_form = forms.HeartRateForm(request.POST)
-        if user_form.is_valid() and profile_form.is_valid() and heart_form.is_valid():
+        if all(a.is_valid() for a in (user_form, profile_form, heart_form)):
             for key, value in user_form.cleaned_data.items():
                 setattr(self.request.user, key, value)
             for key, value in profile_form.cleaned_data.items():
@@ -104,14 +76,6 @@ class ControlPanelView(LoginRequiredMixin, View):
             self.request.user.save()
             self.request.user.profile.save()
         return self.get(request, *args, **kwargs)
-
-
-class UploadView(LoginRequiredMixin, TemplateView):
-    template_name = 'fitness/activity_upload.html'
-
-
-class TrimpView(LoginRequiredMixin, TemplateView):
-    template_name = 'fitness/trimp.html'
 
 
 class RecalculateTRIMPView(LoginRequiredMixin, View):

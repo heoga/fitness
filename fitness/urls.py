@@ -3,10 +3,11 @@ from django.conf.urls import url, include
 from rest_framework import routers
 
 from . import views
+from . import viewsets
 
 router = routers.DefaultRouter()
-router.register(r'activities', views.ActivityViewSet, base_name='activity')
-router.register(r'trimp', views.TrimpViewSet, base_name='trimp')
+router.register(r'activities', viewsets.ActivityViewSet, base_name='activity')
+router.register(r'trimp', viewsets.TrimpViewSet, base_name='trimp')
 
 urlpatterns = [
     url(r'^control_panel/$', views.ControlPanelView.as_view(), name='control_panel'),
