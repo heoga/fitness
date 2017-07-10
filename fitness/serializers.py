@@ -110,15 +110,3 @@ class RunSerializer(serializers.Serializer):
         return {
             a['time'].isoformat(): a for a in ordered_points
         }
-        return {
-            a.time.isoformat(): {
-                'time': a.time,
-                'latitude': a.latitude,
-                'longitude': a.longitude,
-                'altitude': a.altitude,
-                'heart_rate': a.heart_rate,
-                'cadence': a.cadence,
-                'distance': a.distance,
-                'speed': a.speed,
-            } for a in ordered_points
-        }
