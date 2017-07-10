@@ -15,6 +15,7 @@ from django.views.generic import TemplateView
 from django.http import HttpResponse
 
 from rest_framework.response import Response
+from rest_framework.mixins import RetrieveModelMixin, ListModelMixin, CreateModelMixin
 from rest_framework import status
 from rest_framework.settings import api_settings
 
@@ -50,28 +51,17 @@ class ActivitySVG(LoginRequiredMixin, DetailView):
         return Activity.objects.filter(owner=self.request.user)
 
 
-class ActivityViewSet(viewsets.GenericViewSet):
-    queryset = Activity.objects.all()
+class ActivityViewSet(
+    RetrieveModelMixin, ListModelMixin, CreateModelMixin, viewsets.GenericViewSet
+):
+    def get_queryset(self):
+        return Activity.objects.filter(owner=self.request.user)
 
-    def list(self, request):
-        query_set = self.queryset.filter(owner=self.request.user)
-        serializer = ActivityListSerializer(query_set, many=True, context={'request': request})
-        return Response(serializer.data)
-
-    def retrieve(self, request, pk=None):
-        query_set = self.queryset.filter(owner=self.request.user)
-        activity = get_object_or_404(query_set, pk=pk)
-        serializer = ActivityDetailSerializer(activity, context={'request': request})
-        return Response(serializer.data)
-
-    def create(self, request, *args, **kwargs):
-        kwargs['context'] = self.get_serializer_context()
-        kwargs['data'] = request.data
-        serializer = RunSerializer(**kwargs)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        headers = {'Location': serializer.data[api_settings.URL_FIELD_NAME]}
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    def get_serializer_class(self):
+        return {
+            'retrieve': ActivityDetailSerializer,
+            'create': RunSerializer
+        }.get(self.action) or ActivityListSerializer
 
 
 class TrimpViewSet(viewsets.ViewSet):
