@@ -1,6 +1,4 @@
-import datetime
 import pygal
-import math
 from pygal.style import NeonStyle
 
 from django.views.generic import ListView, DetailView
@@ -9,18 +7,15 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.urlresolvers import reverse_lazy
 from django.contrib.auth.decorators import login_required
 
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render
 from django.views import View
 from django.views.generic import TemplateView
 from django.http import HttpResponse
 
 from rest_framework.response import Response
 from rest_framework.mixins import RetrieveModelMixin, ListModelMixin, CreateModelMixin
-from rest_framework import status
-from rest_framework.settings import api_settings
 
-from fitness.forms.profile import ProfileForm, HeartRateForm
-from fitness.forms.user import UserForm
+from fitness.forms import ProfileForm, HeartRateForm, UserForm
 
 from fitness.models import Activity
 from fitness.serializers import ActivityDetailSerializer, ActivityListSerializer, TrimpSerializer, RunSerializer
