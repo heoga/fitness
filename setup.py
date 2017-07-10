@@ -76,7 +76,6 @@ setup(
         'django',
         'django-bootstrap3',
         'djangorestframework',
-        'pygal',
         'python-dateutil',
         'timezonefinder',
     ],

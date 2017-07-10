@@ -1,11 +1,7 @@
-import pygal
-from pygal.style import NeonStyle
-
 from django.views.generic import ListView, DetailView
 from rest_framework import viewsets
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.urlresolvers import reverse_lazy
-from django.contrib.auth.decorators import login_required
 
 from django.shortcuts import render
 from django.views import View
@@ -68,17 +64,6 @@ class TrimpViewSet(viewsets.ViewSet):
             many=True, context={'request': request}
         )
         return Response(serializer.data)
-
-
-@login_required
-def render_trimp(request):
-    points = Activity.trimp_history(request.user)
-    dateline = pygal.DateLine(x_label_rotation=35, style=NeonStyle, legend_at_bottom=True, width=1024)
-    dateline.title = 'Fitness over time'
-    dateline.add('Fitness', [(a.date, a.fitness) for a in points], dots_size=1)
-    dateline.add('Fatigue', [(a.date, a.fatigue) for a in points], show_dots=False)
-    dateline.add('Form', [(a.date, a.form) for a in points], show_dots=False)
-    return dateline.render_django_response()
 
 
 class ControlPanelView(LoginRequiredMixin, View):
