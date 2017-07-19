@@ -12,8 +12,23 @@ from timezonefinder import TimezoneFinder
 from pytz import timezone
 import dateutil.parser
 
-
 TIMEZONE_FINDER = TimezoneFinder()
+
+
+def range_and_average(iterable):
+    max_value = max(iterable)
+    min_value = min(iterable)
+    range_value = max_value - min_value
+    return range_value, average(max_value, min_value)
+
+
+def width_coordinate(value, average_value, max_range, width):
+    return (width * (value - average_value) / max_range) + (width / 2)
+
+
+def height_coordinate(value, average_value, max_range, height):
+    return (height * (1 - (value - average_value) / max_range)) - (height / 2)
+
 
 class Theme(models.Model):
     name = models.CharField(max_length=128)
@@ -49,6 +64,9 @@ class Profile(models.Model):
     def heart_rate_reserve(self):
         return self.maximum_heart_rate - self.minimum_heart_rate
 
+    def percent_of_heart_rate_reserve(self, heart_rate):
+        return max((heart_rate - self.minimum_heart_rate) / self.heart_rate_reserve(), 0)
+
     def save(self, *args, **kwargs):
         self.minimum_heart_rate = max(1, self.minimum_heart_rate)
         self.maximum_heart_rate = max(self.maximum_heart_rate, self.minimum_heart_rate + 1)
@@ -64,6 +82,18 @@ def create_user_profile(sender, instance, created, **kwargs):
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
     instance.profile.save()
+
+
+def delta_minutes(new, old):
+    return (new - old).total_seconds() / 60.0
+
+
+def average(*args):
+    return sum(args) / len(args)
+
+
+def heart_rate_reserve(average_heart_rate, minimum_heart_rate, heart_reserve):
+    return max((average_heart_rate - minimum_heart_rate) / heart_reserve, 0)
 
 
 class Activity(models.Model):
@@ -86,29 +116,28 @@ class Activity(models.Model):
             local_zone = timezone(timezone_name)
             return local_zone.normalize(self.time.astimezone(local_zone)).strftime('%d %B %Y at %H:%M')
 
-
     def points_with_heart_rate(self):
         return [a for a in self.point_stream() if a.get('heart_rate')]
+
+    def delta_trimp(self, current_time, last_time, current_heart_rate, last_heart_rate):
+        exponent = 1.92 if self.owner.profile.gender == 'M' else 1.67
+        minutes = delta_minutes(current_time, last_time)
+        average_heart_rate = average(current_heart_rate, last_heart_rate)
+        reserve = self.owner.profile.percent_of_heart_rate_reserve(average_heart_rate)
+        return (
+            minutes * reserve * 0.64 * math.exp(exponent * reserve)
+        )
 
     def calculate_trimp(self):
         trimp = 0
         last_point = None
-        minimum = self.owner.profile.minimum_heart_rate
-        heart_range = self.owner.profile.heart_rate_reserve()
-        exponent = 1.92 if self.owner.profile.gender == 'M' else 1.67
-        points = self.points_with_heart_rate()
-        if not points:
-            return None
-        for point in points:
+        for point in self.points_with_heart_rate():
             if last_point is not None:
-                minutes = (point['time'] - last_point['time']).total_seconds() / 60.0
-                average_heart_rate = (point['heart_rate'] + last_point['heart_rate']) / 2
-                reserve = max((average_heart_rate - minimum) / heart_range, 0)
-                trimp += (
-                    minutes * reserve * 0.64 * math.exp(exponent * reserve)
+                trimp += self.delta_trimp(
+                    point['time'], last_point['time'], point['heart_rate'], last_point['heart_rate']
                 )
             last_point = point
-        return trimp
+        return trimp or None
 
     @staticmethod
     def decompress(point):
@@ -126,18 +155,21 @@ class Activity(models.Model):
             (a['latitude'], a['longitude']) for a in self.point_stream()
         ]
 
-    def svg_points(self):
+    def adjusted_track(self):
         track = self.track()
         max_latitude = max(a[0] for a in track)
-        min_latitude = min(a[0] for a in track)
-        latitude_range = max_latitude - min_latitude
-        max_longitude = max(a[1] for a in track)
-        min_longitude = min(a[1] for a in track)
-        longitude_range = max_longitude - min_longitude
+        longitude_factor = math.cos(math.radians(max_latitude))
+        return [(a[0], a[1] * longitude_factor) for a in track]
+
+    def svg_points(self, width=30, height=30):
+        track = self.adjusted_track()
+        latitude_range, average_latitude = range_and_average([a[0] for a in track])
+        longitude_range, average_longitude = range_and_average([a[1] for a in track])
+        max_range = max([longitude_range, latitude_range])
         return [
             (
-                30 * (a[1] - min_longitude) / longitude_range,
-                30 * (1 - (a[0] - min_latitude) / latitude_range),
+                width_coordinate(a[1], average_longitude, max_range, width),
+                height_coordinate(a[0], average_latitude, max_range, height),
             )
             for a in track
         ]
@@ -185,120 +217,125 @@ class Activity(models.Model):
             print(key, points)
             raise
 
+    @classmethod
+    def condense_points(cls, points):
+        keys = points[0].keys()
+        return {
+            k: cls.average(points, k) for k in keys
+        }
+
+    @staticmethod
+    def reduction_factor(points):
+        return max(len(points) // 200, 1)
+
     def reduced_points(self):
         output_points = []
         current_points = []
-        out_count = -1
-
         input_points = self.point_stream()
-
-        unsampled_count = len(input_points)
-        desired_points = 200
-        factor = max(unsampled_count // desired_points, 1)
-
+        factor = self.reduction_factor(input_points)
         for index, point in enumerate(input_points):
             current_points.append(point)
             if index % factor == 0:
-                out_count += 1
-                keys = current_points[0].keys()
-                new_point = {
-                    k: self.average(current_points, k) for k in keys
-                }
-                output_points.append(new_point)
+                output_points.append(self.condense_points(current_points))
                 current_points = []
         return output_points
+
+    @staticmethod
+    def geo_line(index, new, old):
+        line = {
+            'type': 'Feature',
+            'properties': {
+                'id': index,
+                'elevation': new.get('altitude'),
+                'speed': new.get('speed'),
+                'distance': new.get('distance'),
+                'cadence': new.get('cadence'),
+            },
+            'geometry': {
+                'type': 'LineString',
+                'coordinates': [
+                    [
+                        old.get('longitude'),
+                        old.get('latitude'),
+                    ],
+                    [
+                        new.get('longitude'),
+                        new.get('latitude'),
+                    ]
+                ]
+            }
+        }
+        if new.get('heart_rate') is not None:
+            line['properties']['heart_rate'] = new.get('heart_rate')
+        return line
+
+    @staticmethod
+    def geo_point(name, point):
+        return {
+            "type": "Feature",
+            "properties": {
+                "id": name,
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    point.get('longitude'), point.get('latitude')
+                ]
+            }
+        }
 
     def geo_json(self):
         data = []
         points = self.reduced_points()
         for index, point in enumerate(points):
             if index > 0:
-                geo_point = {
-                    'type': 'Feature',
-                    'properties': {
-                        'id': index - 1,
-                        'elevation': point.get('altitude'),
-                        'speed': point.get('speed'),
-                        'distance': point.get('distance'),
-                        'cadence': point.get('cadence'),
-                    },
-                    'geometry': {
-                        'type': 'LineString',
-                        'coordinates': [
-                            [
-                                last_point.get('longitude'),
-                                last_point.get('latitude'),
-                            ],
-                            [
-                                point.get('longitude'),
-                                point.get('latitude'),
-                            ]
-                        ]
-                    }
-                }
-                if point.get('heart_rate') is not None:
-                    geo_point['properties']['heart_rate'] = point.get('heart_rate')
-                data.append(geo_point)
+                data.append(self.geo_line(index - 1, point, last_point))
             last_point = point
         first = points[0]
         last = points[-1]
-        data.append({
-            "type": "Feature",
-            "properties": {
-                "id": "progress",
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    first.get('longitude'), first.get('latitude')
-                ]
-            }
-        })
-        data.append({
-            "type": "Feature",
-            "properties": {
-                "id": "start",
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    first.get('longitude'), first.get('latitude')
-                ]
-            }
-        })
-        data.append({
-            "type": "Feature",
-            "properties": {
-                "id": "stop",
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    last.get('longitude'), last.get('latitude')
-                ]
-            }
-        })
+        data.append(self.geo_point("progress", first))
+        data.append(self.geo_point("start", first))
+        data.append(self.geo_point("stop", last))
         return data
 
-    @classmethod
-    def trimp_history(cls, user):
-        activities = cls.objects.filter(owner=user).filter(trimp__isnull=False)
-        start = activities.order_by('time').first().time.date()
-        end = activities.order_by('time').last().time.date()
-        calendar = {k: DataPoint(k) for k in [
-            (start + datetime.timedelta(days=i)) for i in range(0, (end - start).days + 1)
-        ]}
-        for activity in activities:
-            calendar[activity.time.date()].trimp += activity.trimp or 0
-        points = sorted(calendar.values(), key=lambda h: h.date)
-        for index, point in enumerate(points):
+
+def date_array(start, end):
+    return [
+        (start + datetime.timedelta(days=i)) for i in range(0, (end - start).days + 1)
+    ]
+
+
+class TrainingStressBalance(object):
+    def __init__(self, start, end):
+        self.data = {k: TrainingStressBalancePoint(k) for k in date_array(start, end)}
+
+    def insert(self, activity):
+        self.data[activity.time.date()].trimp += activity.trimp or 0
+
+    def inflate(self):
+        for index, point in enumerate(self.points()):
             if index != 0:
                 point.increment_fitness(last_point)
             last_point = point
-        return points
+
+    def points(self):
+        return sorted(self.data.values(), key=lambda h: h.date)
+
+    @classmethod
+    def history_for_user(cls, user, start=None, end=None):
+        activities = Activity.objects.filter(owner=user).filter(trimp__isnull=False)
+        if start is None:
+            start = activities.order_by('time').first().time.date()
+        if end is None:
+            end = activities.order_by('time').last().time.date()
+        balance = cls(start, end)
+        for activity in activities:
+            balance.insert(activity)
+            balance.inflate()
+        return balance.points()
 
 
-class DataPoint(object):
+class TrainingStressBalancePoint(object):
     def __init__(self, date):
         self.date = date
         self.trimp = 0

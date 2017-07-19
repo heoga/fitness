@@ -24,7 +24,7 @@ class TrimpViewSet(viewsets.ViewSet):
 
     def list(self, request):
         serializer = serializers.TrimpSerializer(
-            models.Activity.trimp_history(self.request.user),
+            models.TrainingStressBalance.history_for_user(self.request.user),
             many=True, context={'request': request}
         )
         return Response(serializer.data)
