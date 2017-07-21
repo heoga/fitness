@@ -5,6 +5,7 @@ import re
 from io import open
 
 from setuptools import setup
+from fitness.version import VERSION
 
 try:
     from pypandoc import convert
@@ -60,11 +61,9 @@ def get_package_data(package):
     return {package: filepaths}
 
 
-version = "0.1.10"
-
 setup(
     name='fitness',
-    version=version,
+    version=VERSION,
     license='BSD',
     description='Fitness Module',
     long_description='Fitness Module',
