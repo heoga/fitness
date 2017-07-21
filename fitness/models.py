@@ -15,6 +15,28 @@ import dateutil.parser
 TIMEZONE_FINDER = TimezoneFinder()
 
 
+def average(*args):
+    return sum(args) / len(args)
+
+
+def date_array(start, end):
+    return [
+        (start + datetime.timedelta(days=i)) for i in range(0, (end - start).days + 1)
+    ]
+
+
+def delta_minutes(new, old):
+    return (new - old).total_seconds() / 60.0
+
+
+def heart_rate_reserve(average_heart_rate, minimum_heart_rate, heart_reserve):
+    return max((average_heart_rate - minimum_heart_rate) / heart_reserve, 0)
+
+
+def height_coordinate(value, average_value, max_range, height):
+    return (height * (1 - (value - average_value) / max_range)) - (height / 2)
+
+
 def range_and_average(iterable):
     max_value = max(iterable)
     min_value = min(iterable)
@@ -24,10 +46,6 @@ def range_and_average(iterable):
 
 def width_coordinate(value, average_value, max_range, width):
     return (width * (value - average_value) / max_range) + (width / 2)
-
-
-def height_coordinate(value, average_value, max_range, height):
-    return (height * (1 - (value - average_value) / max_range)) - (height / 2)
 
 
 class Theme(models.Model):
@@ -82,18 +100,6 @@ def create_user_profile(sender, instance, created, **kwargs):
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
     instance.profile.save()
-
-
-def delta_minutes(new, old):
-    return (new - old).total_seconds() / 60.0
-
-
-def average(*args):
-    return sum(args) / len(args)
-
-
-def heart_rate_reserve(average_heart_rate, minimum_heart_rate, heart_reserve):
-    return max((average_heart_rate - minimum_heart_rate) / heart_reserve, 0)
 
 
 class Activity(models.Model):
@@ -297,12 +303,6 @@ class Activity(models.Model):
         data.append(self.geo_point("start", first))
         data.append(self.geo_point("stop", last))
         return data
-
-
-def date_array(start, end):
-    return [
-        (start + datetime.timedelta(days=i)) for i in range(0, (end - start).days + 1)
-    ]
 
 
 class TrainingStressBalance(object):
