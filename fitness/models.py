@@ -30,7 +30,7 @@ def delta_minutes(new, old):
 
 
 def heart_rate_reserve(average_heart_rate, minimum_heart_rate, heart_reserve):
-    return max((average_heart_rate - minimum_heart_rate) / heart_reserve, 0)
+    return min(max((average_heart_rate - minimum_heart_rate) / heart_reserve, 0), 1)
 
 
 def height_coordinate(value, average_value, max_range, height):
@@ -74,11 +74,6 @@ class Profile(models.Model):
         default=MALE,
     )
 
-    def __init__(self, *args, **kwargs):
-        super(Profile, self).__init__(*args, **kwargs)
-        self.__original_minimum = self.minimum_heart_rate
-        self.__original_maximum = self.maximum_heart_rate
-
     def heart_rate_reserve(self):
         return self.maximum_heart_rate - self.minimum_heart_rate
 
@@ -92,13 +87,13 @@ class Profile(models.Model):
 
 
 @receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
+def create_user_profile(sender, instance, created, **kwargs):  # pragma: no cover
     if created:
         Profile.objects.create(user=instance, theme=Theme.objects.first())
 
 
 @receiver(post_save, sender=User)
-def save_user_profile(sender, instance, **kwargs):
+def save_user_profile(sender, instance, **kwargs):  # pragma: no cover
     instance.profile.save()
 
 
@@ -119,7 +114,10 @@ class Activity(models.Model):
     def local_time(self):
         for first_point in self.stream.values():
             timezone_name = TIMEZONE_FINDER.timezone_at(lng=first_point['longitude'], lat=first_point['latitude'])
-            local_zone = timezone(timezone_name)
+            if timezone_name is None:
+                local_zone = timezone('UTC')
+            else:
+                local_zone = timezone(timezone_name)
             return local_zone.normalize(self.time.astimezone(local_zone)).strftime('%d %B %Y at %H:%M')
 
     def points_with_heart_rate(self):
@@ -215,13 +213,9 @@ class Activity(models.Model):
 
     @staticmethod
     def average(points, key):
-        if isinstance(points[0][key], datetime.datetime):
+        if isinstance(points[0].get(key), datetime.datetime):
             return points[0][key]
-        try:
-            return (sum(p[key] or 0 for p in points) / len(points)) or None
-        except:
-            print(key, points)
-            raise
+        return (sum(p.get(key) or 0 for p in points) / len(points)) or None
 
     @classmethod
     def condense_points(cls, points):
@@ -304,6 +298,19 @@ class Activity(models.Model):
         data.append(self.geo_point("stop", last))
         return data
 
+    @classmethod
+    def trimp_activities(cls, user, start=None, end=None):
+        activities = cls.objects.filter(owner=user).filter(trimp__isnull=False)
+        if start is None:
+            start = activities.order_by('time').first().time.date()
+        else:
+            activities = activities.filter(time__gte=start)
+        if end is None:
+            end = activities.order_by('time').last().time.date()
+        else:
+            activities = activities.filter(time__lte=end)
+        return activities, start, end
+
 
 class TrainingStressBalance(object):
     def __init__(self, start, end):
@@ -323,15 +330,11 @@ class TrainingStressBalance(object):
 
     @classmethod
     def history_for_user(cls, user, start=None, end=None):
-        activities = Activity.objects.filter(owner=user).filter(trimp__isnull=False)
-        if start is None:
-            start = activities.order_by('time').first().time.date()
-        if end is None:
-            end = activities.order_by('time').last().time.date()
+        activities, start, end = Activity.trimp_activities(user, start, end)
         balance = cls(start, end)
         for activity in activities:
             balance.insert(activity)
-            balance.inflate()
+        balance.inflate()
         return balance.points()
 
 
